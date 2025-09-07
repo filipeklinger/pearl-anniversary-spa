@@ -4,6 +4,7 @@ import { ChevronDown, Heart, MapPin, Calendar, Navigation, Phone, Car, Shield } 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import RSVPForm from "@/components/rsvp-form"
+import PhotoGallery from "@/components/photo-gallery"
 import Link from "next/link"
 
 export default function HomePage() {
@@ -75,6 +76,11 @@ export default function HomePage() {
                   Agora, queremos celebrar este marco especial ao lado de quem mais amamos. Venha fazer parte desta
                   celebração única e ajude-nos a brindar aos próximos 30 anos de nossa jornada juntos.
                 </p>
+              </div>
+
+              <div className="mt-12">
+                <h3 className="font-serif text-2xl font-bold text-slate-800 mb-6">Momentos Especiais</h3>
+                <PhotoGallery />
               </div>
             </CardContent>
           </Card>
