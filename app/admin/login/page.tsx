@@ -41,19 +41,19 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h1 className="font-serif text-3xl font-bold text-foreground mb-2">Área Administrativa</h1>
-          <p className="text-muted-foreground">Bodas de Pérola - Robson & Roseli</p>
+          <h1 className="font-serif text-3xl font-bold text-slate-800 mb-2">Área Administrativa</h1>
+          <p className="text-slate-600">Bodas de Pérola - Robson & Roseli</p>
         </div>
 
         <Card className="bg-card border-border shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="font-serif text-2xl font-bold text-card-foreground">Acesso Restrito</CardTitle>
-            <p className="text-muted-foreground text-sm">Entre com suas credenciais para acessar o painel</p>
+            <CardTitle className="font-serif text-2xl font-bold text-slate-800">Acesso Restrito</CardTitle>
+            <p className="text-slate-600 text-sm">Entre com suas credenciais para acessar o painel</p>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-card-foreground">
+                <Label htmlFor="username" className="text-slate-800">
                   Usuário
                 </Label>
                 <Input
@@ -68,7 +68,7 @@ export default function AdminLogin() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-card-foreground">
+                <Label htmlFor="password" className="text-slate-800">
                   Senha
                 </Label>
                 <div className="relative">
@@ -84,7 +84,7 @@ export default function AdminLogin() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-600 hover:text-slate-800"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -106,18 +106,14 @@ export default function AdminLogin() {
             </form>
 
             <div className="mt-6 text-center">
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/")}
-                className="text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" onClick={() => router.push("/")} className="text-slate-600 hover:text-slate-800">
                 Voltar ao site
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
+        <div className="mt-6 text-center text-sm text-slate-600">
           <p>Credenciais de demonstração:</p>
           <p>
             Usuário: <code className="bg-secondary/20 px-1 rounded">robson</code>
