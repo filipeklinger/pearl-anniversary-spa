@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, Users, Gift, DollarSign } from "lucide-react"
+import { Heart, Users, Gift, DollarSign, Check } from "lucide-react"
 
 export default function RSVPForm() {
   const [formData, setFormData] = useState({
@@ -73,43 +72,50 @@ export default function RSVPForm() {
               value={formData.nome}
               onChange={(e) => handleInputChange("nome", e.target.value)}
               required
-              className="bg-input border-border text-foreground"
+              className="bg-input border-border"
             />
           </div>
 
           {/* Tipo de Doação */}
           <div className="space-y-4">
             <Label className="text-slate-800 font-medium">Como você gostaria de contribuir? *</Label>
-            <RadioGroup
-              value={formData.tipoDoacao}
-              onValueChange={(value) => handleInputChange("tipoDoacao", value)}
-              className="space-y-3"
-            >
-              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-secondary/5 transition-colors">
-                <RadioGroupItem value="alimento" id="alimento" />
-                <div className="flex items-center space-x-3 flex-1">
+            <div className="space-y-3">
+              <div
+                className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
+                  formData.tipoDoacao === "alimento"
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:bg-secondary/5"
+                }`}
+                onClick={() => handleInputChange("tipoDoacao", "alimento")}
+              >
+                <div className="flex items-center space-x-3">
                   <Gift className="w-5 h-5 text-primary" />
                   <div>
-                    <Label htmlFor="alimento" className="text-slate-800 font-medium cursor-pointer">
-                      Doação de Alimentos
-                    </Label>
+                    <span className="text-slate-800 font-medium">Doação de Alimentos</span>
                     <p className="text-sm text-slate-600">Trarei 1kg de alimento não perecível</p>
                   </div>
                 </div>
+                {formData.tipoDoacao === "alimento" && <Check className="w-5 h-5 text-primary" />}
               </div>
-              <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-secondary/5 transition-colors">
-                <RadioGroupItem value="pix" id="pix" />
-                <div className="flex items-center space-x-3 flex-1">
+
+              <div
+                className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
+                  formData.tipoDoacao === "pix"
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:bg-secondary/5"
+                }`}
+                onClick={() => handleInputChange("tipoDoacao", "pix")}
+              >
+                <div className="flex items-center space-x-3">
                   <DollarSign className="w-5 h-5 text-primary" />
                   <div>
-                    <Label htmlFor="pix" className="text-slate-800 font-medium cursor-pointer">
-                      Contribuição PIX
-                    </Label>
+                    <span className="text-slate-800 font-medium">Contribuição PIX</span>
                     <p className="text-sm text-slate-600">Farei uma transferência via PIX</p>
                   </div>
                 </div>
+                {formData.tipoDoacao === "pix" && <Check className="w-5 h-5 text-primary" />}
               </div>
-            </RadioGroup>
+            </div>
           </div>
 
           {/* Número de Convidados */}
@@ -121,7 +127,7 @@ export default function RSVPForm() {
               value={formData.numeroConvidados}
               onValueChange={(value) => handleInputChange("numeroConvidados", value)}
             >
-              <SelectTrigger className="bg-input border-border text-foreground">
+              <SelectTrigger className="bg-input border-border">
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4 text-primary" />
                   <SelectValue placeholder="Selecione o número de pessoas" />
@@ -148,7 +154,7 @@ export default function RSVPForm() {
               placeholder="Alguma observação especial, restrição alimentar ou mensagem para o casal..."
               value={formData.observacoes}
               onChange={(e) => handleInputChange("observacoes", e.target.value)}
-              className="bg-input border-border text-foreground min-h-[100px]"
+              className="bg-input border-border text-slate-800 min-h-[100px]"
             />
           </div>
 

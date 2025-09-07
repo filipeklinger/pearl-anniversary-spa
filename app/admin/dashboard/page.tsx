@@ -115,7 +115,11 @@ export default function AdminDashboard() {
               <p className="text-slate-600 text-sm">Bodas de Pérola - Robson & Roseli</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2 bg-transparent">
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-white border-slate-300 text-slate-800 hover:bg-slate-50 hover:text-slate-900"
+          >
             <LogOut className="w-4 h-4" />
             Sair
           </Button>
@@ -188,7 +192,11 @@ export default function AdminDashboard() {
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-serif text-2xl font-bold text-slate-800">Confirmações de Presença</CardTitle>
-            <Button onClick={exportData} variant="outline" className="flex items-center gap-2 bg-transparent">
+            <Button
+              onClick={exportData}
+              variant="outline"
+              className="flex items-center gap-2 bg-white border-slate-300 text-slate-800 hover:bg-slate-50 hover:text-slate-900"
+            >
               <Download className="w-4 h-4" />
               Exportar CSV
             </Button>

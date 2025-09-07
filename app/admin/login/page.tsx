@@ -98,7 +98,7 @@ export default function AdminLogin() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white border-0"
               >
                 <Lock className="w-4 h-4 mr-2" />
                 {isLoading ? "Entrando..." : "Entrar"}
@@ -106,7 +106,11 @@ export default function AdminLogin() {
             </form>
 
             <div className="mt-6 text-center">
-              <Button variant="ghost" onClick={() => router.push("/")} className="text-slate-600 hover:text-slate-800">
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/")}
+                className="text-slate-800 hover:text-slate-900 hover:bg-slate-100"
+              >
                 Voltar ao site
               </Button>
             </div>
