@@ -1,25 +1,49 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, Users, Gift, DollarSign, Check } from "lucide-react"
+import { Heart, Users } from "lucide-react"
+
+const convitesCadastrados = [
+  { nomeConvite: "Família Silva", pessoas: ["João Silva", "Maria Silva", "Pedro Silva"] },
+  { nomeConvite: "Família Santos", pessoas: ["Ana Santos", "Carlos Santos"] },
+  {
+    nomeConvite: "Família Oliveira",
+    pessoas: ["Roberto Oliveira", "Lucia Oliveira", "Bruno Oliveira", "Carla Oliveira"],
+  },
+  { nomeConvite: "Amigos da Faculdade", pessoas: ["Marcos", "Patricia", "Fernando"] },
+  { nomeConvite: "Vizinhos", pessoas: ["Dona Rosa", "Seu José"] },
+]
 
 export default function RSVPForm() {
   const [formData, setFormData] = useState({
-    nome: "",
-    tipoDoacao: "",
-    numeroConvidados: "",
+    nomeConvite: "",
     observacoes: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [sugestoes, setSugestoes] = useState<string[]>([])
+  const [pessoasConvite, setPessoasConvite] = useState<string[]>([])
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
+
+  useEffect(() => {
+    if (formData.nomeConvite.length > 0) {
+      const sugestoesFiltradas = convitesCadastrados
+        .filter((convite) => convite.nomeConvite.toLowerCase().includes(formData.nomeConvite.toLowerCase()))
+        .map((convite) => convite.nomeConvite)
+      setSugestoes(sugestoesFiltradas)
+      setMostrarSugestoes(true)
+    } else {
+      setSugestoes([])
+      setMostrarSugestoes(false)
+      setPessoasConvite([])
+    }
+  }, [formData.nomeConvite])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,6 +58,16 @@ export default function RSVPForm() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const selecionarConvite = (nomeConvite: string) => {
+    setFormData((prev) => ({ ...prev, nomeConvite }))
+    setMostrarSugestoes(false)
+
+    const convite = convitesCadastrados.find((c) => c.nomeConvite === nomeConvite)
+    if (convite) {
+      setPessoasConvite(convite.pessoas)
+    }
   }
 
   if (isSubmitted) {
@@ -60,89 +94,54 @@ export default function RSVPForm() {
       </CardHeader>
       <CardContent className="p-8 pt-0">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nome */}
-          <div className="space-y-2">
-            <Label htmlFor="nome" className="text-slate-800 font-medium">
-              Nome Completo *
+          <div className="space-y-2 relative">
+            <Label htmlFor="nomeConvite" className="text-slate-800 font-medium">
+              Nome no Convite *
             </Label>
             <Input
-              id="nome"
+              id="nomeConvite"
               type="text"
-              placeholder="Digite seu nome completo"
-              value={formData.nome}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
+              placeholder="Digite o nome do convite"
+              value={formData.nomeConvite}
+              onChange={(e) => handleInputChange("nomeConvite", e.target.value)}
+              onFocus={() => formData.nomeConvite.length > 0 && setMostrarSugestoes(true)}
               required
               className="bg-input border-border"
             />
+
+            {mostrarSugestoes && sugestoes.length > 0 && (
+              <div className="absolute z-10 w-full bg-white border border-border rounded-md shadow-lg mt-1">
+                {sugestoes.map((sugestao, index) => (
+                  <div
+                    key={index}
+                    className="px-4 py-2 hover:bg-secondary/10 cursor-pointer text-slate-800"
+                    onClick={() => selecionarConvite(sugestao)}
+                  >
+                    {sugestao}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Tipo de Doação */}
-          <div className="space-y-4">
-            <Label className="text-slate-800 font-medium">Como você gostaria de contribuir? *</Label>
-            <div className="space-y-3">
-              <div
-                className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
-                  formData.tipoDoacao === "alimento"
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border hover:bg-secondary/5"
-                }`}
-                onClick={() => handleInputChange("tipoDoacao", "alimento")}
-              >
-                <div className="flex items-center space-x-3">
-                  <Gift className="w-5 h-5 text-primary" />
-                  <div>
-                    <span className="text-slate-800 font-medium">Doação de Alimentos</span>
-                    <p className="text-sm text-slate-600">Trarei 1kg de alimento não perecível</p>
-                  </div>
+          {pessoasConvite.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-slate-800 font-medium">Pessoas no Convite:</Label>
+              <div className="bg-secondary/5 border border-border rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-slate-700 font-medium">{pessoasConvite.length} pessoa(s)</span>
                 </div>
-                {formData.tipoDoacao === "alimento" && <Check className="w-5 h-5 text-primary" />}
-              </div>
-
-              <div
-                className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
-                  formData.tipoDoacao === "pix"
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border hover:bg-secondary/5"
-                }`}
-                onClick={() => handleInputChange("tipoDoacao", "pix")}
-              >
-                <div className="flex items-center space-x-3">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                  <div>
-                    <span className="text-slate-800 font-medium">Contribuição PIX</span>
-                    <p className="text-sm text-slate-600">Farei uma transferência via PIX</p>
-                  </div>
-                </div>
-                {formData.tipoDoacao === "pix" && <Check className="w-5 h-5 text-primary" />}
+                <ul className="space-y-1">
+                  {pessoasConvite.map((pessoa, index) => (
+                    <li key={index} className="text-slate-600">
+                      • {pessoa}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-          </div>
-
-          {/* Número de Convidados */}
-          <div className="space-y-2">
-            <Label htmlFor="convidados" className="text-slate-800 font-medium">
-              Quantas pessoas você trará? *
-            </Label>
-            <Select
-              value={formData.numeroConvidados}
-              onValueChange={(value) => handleInputChange("numeroConvidados", value)}
-            >
-              <SelectTrigger className="bg-input border-border">
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <SelectValue placeholder="Selecione o número de pessoas" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Apenas eu (1 pessoa)</SelectItem>
-                <SelectItem value="2">Eu + 1 acompanhante (2 pessoas)</SelectItem>
-                <SelectItem value="3">Eu + 2 acompanhantes (3 pessoas)</SelectItem>
-                <SelectItem value="4">Eu + 3 acompanhantes (4 pessoas)</SelectItem>
-                <SelectItem value="5">Eu + 4 acompanhantes (5 pessoas)</SelectItem>
-                <SelectItem value="6+">Mais de 5 pessoas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          )}
 
           {/* Observações */}
           <div className="space-y-2">
@@ -161,7 +160,7 @@ export default function RSVPForm() {
           {/* Botão de Envio */}
           <Button
             type="submit"
-            disabled={!formData.nome || !formData.tipoDoacao || !formData.numeroConvidados || isSubmitting}
+            disabled={!formData.nomeConvite || isSubmitting}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 text-lg font-medium"
           >
             {isSubmitting ? "Enviando..." : "Confirmar Presença"}
