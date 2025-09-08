@@ -70,7 +70,7 @@ export default function HomePage() {
                 </p>
                 <p className="text-lg leading-relaxed mb-6">
                   Como pérolas que se formam com o tempo, paciência e cuidado, nosso amor cresceu e se fortaleceu a cada
-                  dia. Três décadas de cumplicidade, risadas, lágrimas de alegria e um amor que só cresce.
+                  dia. Três décadas de cumplicidade, risadas, lágrimas e um amor que só cresce.
                 </p>
                 <p className="text-lg leading-relaxed">
                   Agora, queremos celebrar este marco especial ao lado de quem mais amamos. Venha fazer parte desta
@@ -104,7 +104,7 @@ export default function HomePage() {
                   </div>
                   <h3 className="font-serif text-2xl font-bold text-slate-800 mb-4">Doação de Alimentos</h3>
                   <p className="text-slate-700 leading-relaxed mb-6">
-                    Em vez de presentes, pedimos que tragam 1kg de alimento não perecível. Juntos, vamos espalhar amor e
+                    Em vez de presentes, pedimos que tragam alimento não perecível. Juntos, vamos espalhar amor e
                     solidariedade para famílias necessitadas.
                   </p>
                   <div className="text-sm text-slate-600">
@@ -124,11 +124,11 @@ export default function HomePage() {
                   </div>
                   <h3 className="font-serif text-2xl font-bold text-slate-800 mb-4">Contribuição PIX</h3>
                   <p className="text-slate-700 leading-relaxed mb-6">
-                    Prefere contribuir via PIX? O valor equivalente a 1kg de alimento será destinado à compra de
+                    Prefere contribuir via PIX? O valor será destinado à compra de
                     mantimentos para doação.
                   </p>
                   <div className="bg-secondary/20 p-4 rounded-lg">
-                    <p className="font-mono text-sm text-slate-800">PIX: robson.roseli@email.com</p>
+                    <p className="font-mono text-sm text-slate-800">PIX: rgabrich.zap@gmail.com</p>
                   </div>
                 </div>
               </CardContent>
@@ -191,7 +191,7 @@ export default function HomePage() {
                           <p className="text-slate-600">
                             Sábado, 08 de Novembro de 2025
                             <br />
-                            14:00 às 18:00
+                            14:00 hrs
                           </p>
                         </div>
                       </div>
