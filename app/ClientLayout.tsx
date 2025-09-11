@@ -6,6 +6,7 @@ import { DM_Sans } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import { SessionProvider } from "next-auth/react"
 import "./globals.css"
 
 const playfairDisplay = Playfair_Display({
@@ -28,7 +29,9 @@ export default function ClientLayout({
   return (
     <html lang="pt-BR">
       <body className={`font-sans ${dmSans.variable} ${playfairDisplay.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={null}>{children}</Suspense>
+        <SessionProvider>
+          <Suspense fallback={null}>{children}</Suspense>
+        </SessionProvider>
         <Analytics />
       </body>
     </html>
