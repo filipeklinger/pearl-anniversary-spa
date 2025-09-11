@@ -206,13 +206,38 @@ export function useAdminDashboard() {
   // Export data to Excel
   const exportToExcel = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch('/api/admin/export-invites')
       if (response.ok) {
-        const data = await response.json()
-        console.log('Dados exportados:', JSON.stringify(data, null, 2)) // Debug
+        const data = await response.json() as {
+            "Nome do Convite": string,
+            "DDI": string,
+            "Telefone": string,
+            "Grupo": string,
+            "Observação": string,
+            "Nome do Convidado": string,
+            "Gênero": "M" | "F" | "",
+            "Faixa Etária": "Adulto",
+            "Custo/Pagamento": "Inteira",
+            "Situação": "",
+            "Mesa": number,
+            "Confirmado": "Não" | "Sim",
+            "Data de Criação": Date,
+            "Última Atualização": Date
+        }[]
 
         const workbook = XLSX.utils.book_new()
-        const worksheet = XLSX.utils.json_to_sheet(data)
+        const worksheet = XLSX.utils.json_to_sheet(data.sort((a, b) => {
+          // Sort by invite name first
+          if (a["Nome do Convite"] < b["Nome do Convite"]) return -1
+          if (a["Nome do Convite"] > b["Nome do Convite"]) return 1
+          
+          // Then by guest name
+          if (a["Nome do Convidado"] < b["Nome do Convidado"]) return -1
+          if (a["Nome do Convidado"] > b["Nome do Convidado"]) return 1
+          
+          return 0
+        }))
         
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Confirmações')
         
@@ -228,6 +253,8 @@ export function useAdminDashboard() {
     } catch (error) {
       console.error('Erro na exportação:', error)
       alert('Erro ao exportar dados')
+    } finally {
+      setIsLoading(false)
     }
   }
 
