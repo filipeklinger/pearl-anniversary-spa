@@ -15,7 +15,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/admin/:path*',
+        // Aplicar headers JSON apenas para rotas que não são do NextAuth
+        source: '/api/(?!auth).*',
         headers: [
           {
             key: 'Content-Type',
