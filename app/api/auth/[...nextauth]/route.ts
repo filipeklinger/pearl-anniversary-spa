@@ -51,7 +51,9 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 horas
   },
+  secret: process.env.NEXTAUTH_SECRET || 'pearl-anniversary-secret-key-2025',
   pages: {
     signIn: '/admin/login',
   },
@@ -59,16 +61,19 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.email = token.email as string;
       }
       return session;
     },
   },
+  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);
