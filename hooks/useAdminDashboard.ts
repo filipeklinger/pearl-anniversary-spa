@@ -209,9 +209,10 @@ export function useAdminDashboard() {
       const response = await fetch('/api/admin/export-invites')
       if (response.ok) {
         const data = await response.json()
-        
+        console.log('Dados exportados:', JSON.stringify(data, null, 2)) // Debug
+
         const workbook = XLSX.utils.book_new()
-        const worksheet = XLSX.utils.json_to_sheet(data.exports)
+        const worksheet = XLSX.utils.json_to_sheet(data)
         
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Confirmações')
         

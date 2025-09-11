@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       const guestsList = await db
         .select()
         .from(guests)
-        .where(eq(guests.inviteId, invite.id));
+        .where(eq(guests.inviteId, invite.id))
+        .orderBy(guests.fullName);
 
       // Se não há convidados, adicionar linha apenas com o convite
       if (guestsList.length === 0) {
