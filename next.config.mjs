@@ -15,7 +15,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: '/api/admin/:path*',
         headers: [
           {
             key: 'Content-Type',
