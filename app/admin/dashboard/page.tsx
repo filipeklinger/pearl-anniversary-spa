@@ -47,6 +47,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
   const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
   const [stats, setStats] = useState({
     totalInvites: 0,
     totalGuests: 0,
@@ -111,6 +112,8 @@ export default function AdminDashboard() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    setIsUploading(true)
+
     try {
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data)
@@ -134,6 +137,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Erro no upload:', error)
       alert('Erro ao processar arquivo')
+    } finally {
+      setIsUploading(false)
     }
 
     // Reset do input
@@ -165,7 +170,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Heart className="w-12 h-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-slate-600">Carregando...</p>
+          <p className="text-foreground">Carregando...</p>
         </div>
       </div>
     )
@@ -179,8 +184,8 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <Heart className="w-8 h-8 text-primary" />
             <div>
-              <h1 className="font-serif text-2xl font-bold text-slate-800">Painel Administrativo</h1>
-              <p className="text-slate-600 text-sm">Bodas de Pérola - Robson & Roseli</p>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</h1>
+              <p className="text-muted-foreground text-sm">Bodas de Pérola - Robson & Roseli</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -193,7 +198,7 @@ export default function AdminDashboard() {
             <Button
               variant="outline"
               onClick={handleSignOut}
-              className="flex items-center gap-2 bg-white border-slate-300 text-slate-800 hover:bg-slate-50 hover:text-slate-900"
+              className="flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" />
               Sair
@@ -263,9 +268,10 @@ export default function AdminDashboard() {
               <Button
                 onClick={() => document.getElementById('file-upload')?.click()}
                 className="w-full sm:w-auto"
+                disabled={isUploading}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Importar Planilha
+                {isUploading ? 'Importando...' : 'Importar Planilha'}
               </Button>
             </div>
           </div>
@@ -324,27 +330,53 @@ export default function AdminDashboard() {
               {filteredInvites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg"
+                  className="flex flex-col p-4 border border-border rounded-lg bg-card"
                 >
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{invite.nameOnInvite}</h3>
-                    {invite.phone && (
-                      <p className="text-sm text-muted-foreground">{invite.phone}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={invite.confirmedCount > 0 ? "default" : "secondary"}>
-                        {invite.confirmedCount} / {invite.totalGuests} confirmados
-                      </Badge>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{invite.nameOnInvite}</h3>
+                      {invite.phone && (
+                        <p className="text-sm text-muted-foreground">{invite.phone}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={invite.confirmedCount > 0 ? "default" : "secondary"}>
+                          {invite.confirmedCount} / {invite.totalGuests} confirmados
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {invite.confirmedCount > 0 ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {invite.confirmedCount > 0 ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
-                    )}
-                  </div>
+                  {/* Lista de convidados */}
+                  {invite.guests.length > 0 && (
+                    <div className="border-t border-border pt-3">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Convidados:</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {invite.guests.map((guest) => (
+                          <div
+                            key={guest.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            {guest.confirmed ? (
+                              <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="h-3 w-3 text-red-600 flex-shrink-0" />
+                            )}
+                            <span className={guest.confirmed ? "text-foreground" : "text-muted-foreground"}>
+                              {guest.fullName}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               
