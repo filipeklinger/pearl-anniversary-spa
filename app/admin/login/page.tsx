@@ -41,23 +41,23 @@ export default function AdminLogin() {
 
       console.log('Login result:', result) // Debug
 
-      if (result?.error) {
+      if (result?.error && result.error.length > 0) {
         setError("Email ou senha incorretos")
         setIsLoading(false)
-      } else if (result?.ok) {
-        // Aguardar um pouco para a sessão ser estabelecida
-        await new Promise(resolve => setTimeout(resolve, 500))
+        return;
+      }
+      // Aguardar um pouco para a sessão ser estabelecida
+      setTimeout(() => {
+        console.log('Redirecionando para /admin/dashboard') // Debug;
         
         // Tentar redirecionamento múltiplo para garantir
         try {
-          router.push("/admin/dashboard")
+          router.push("/admin/dashboard");
+          window.location.href = "/admin/dashboard";
         } catch {
-          window.location.href = "/admin/dashboard"
+          
         }
-      } else {
-        setError("Erro inesperado no login")
-        setIsLoading(false)
-      }
+      }, 500);
     } catch (error) {
       console.error('Login error:', error)
       setError("Erro ao fazer login. Tente novamente.")
