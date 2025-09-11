@@ -8,13 +8,19 @@ import { eq } from 'drizzle-orm';
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
+      id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials, req) {
-        console.log('Authorize called with:', { email: credentials?.email, hasPassword: !!credentials?.password });
+        console.log('Authorize called with:', { 
+          email: credentials?.email, 
+          hasPassword: !!credentials?.password,
+          requestMethod: req?.method,
+          headers: req?.headers
+        });
         
         if (!credentials?.email || !credentials?.password) {
           console.log('Missing credentials');
@@ -22,11 +28,14 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          console.log('Attempting database connection...');
           const user = await db
             .select()
             .from(users)
             .where(eq(users.email, credentials.email))
             .limit(1);
+
+          console.log('Database query result:', { userFound: user.length > 0 });
 
           if (user.length === 0) {
             console.log('User not found');
@@ -37,6 +46,8 @@ export const authOptions: NextAuthOptions = {
             credentials.password,
             user[0].passwordHash
           );
+
+          console.log('Password validation:', { isValid: isPasswordValid });
 
           if (!isPasswordValid) {
             console.log('Invalid password');
@@ -65,6 +76,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT callback:', { hasUser: !!user, tokenId: token.id });
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -72,6 +84,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log('Session callback:', { sessionUser: !!session.user, tokenId: token.id });
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -79,7 +92,18 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Sempre ativo para debug
+  logger: {
+    error(code, metadata) {
+      console.error('NextAuth Error:', code, metadata);
+    },
+    warn(code) {
+      console.warn('NextAuth Warning:', code);
+    },
+    debug(code, metadata) {
+      console.log('NextAuth Debug:', code, metadata);
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
