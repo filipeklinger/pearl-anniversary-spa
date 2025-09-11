@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,11 +12,19 @@ import { Label } from "@/components/ui/label"
 import { Heart, Lock, Eye, EyeOff } from "lucide-react"
 
 export default function AdminLogin() {
+  const { data: session, status } = useSession()
   const [credentials, setCredentials] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      router.push("/admin/dashboard")
+    }
+  }, [session, status, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,17 +39,30 @@ export default function AdminLogin() {
         callbackUrl: '/admin/dashboard'
       })
 
+      console.log('Login result:', result) // Debug
+
       if (result?.error) {
         setError("Email ou senha incorretos")
+        setIsLoading(false)
       } else if (result?.ok) {
-        router.push("/admin/dashboard")
+        // Aguardar um pouco para a sessão ser estabelecida
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Tentar redirecionamento múltiplo para garantir
+        try {
+          router.push("/admin/dashboard")
+        } catch {
+          window.location.href = "/admin/dashboard"
+        }
+      } else {
+        setError("Erro inesperado no login")
+        setIsLoading(false)
       }
     } catch (error) {
       console.error('Login error:', error)
       setError("Erro ao fazer login. Tente novamente.")
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
