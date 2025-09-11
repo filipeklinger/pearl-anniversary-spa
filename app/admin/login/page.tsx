@@ -123,15 +123,6 @@ export default function AdminLogin() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 text-center text-sm text-slate-600">
-          <p>Credenciais de demonstração:</p>
-          <p>
-            Usuário: <code className="bg-secondary/20 px-1 rounded">robson</code>
-          </p>
-          <p>
-            Senha: <code className="bg-secondary/20 px-1 rounded">roseli2024</code>
-          </p>
-        </div>
       </div>
     </div>
   )
