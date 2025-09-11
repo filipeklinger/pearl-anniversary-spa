@@ -24,20 +24,20 @@ export default function AdminLogin() {
     setError("")
 
     try {
-      const result = await signIn('credentials?callbackUrl=/admin/dashboard', {
+      const result = await signIn('credentials', {
         email: credentials.email,
         password: credentials.password,
-        redirect: true,
+        redirect: false,
+        callbackUrl: '/admin/dashboard'
       })
 
       if (result?.error) {
         setError("Email ou senha incorretos")
-      } else {
-        setTimeout(() => {
-          router.push("/admin/dashboard")
-        }, 100)
+      } else if (result?.ok) {
+        router.push("/admin/dashboard")
       }
     } catch (error) {
+      console.error('Login error:', error)
       setError("Erro ao fazer login. Tente novamente.")
     }
 
