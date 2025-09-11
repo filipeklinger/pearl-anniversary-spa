@@ -33,7 +33,9 @@ export default function AdminLogin() {
       if (result?.error) {
         setError("Email ou senha incorretos")
       } else {
-        router.push("/admin/dashboard")
+        setTimeout(() => {
+          router.push("/admin/dashboard")
+        }, 100)
       }
     } catch (error) {
       setError("Erro ao fazer login. Tente novamente.")
