@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, sql, and, isNotNull, ne } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,8 +16,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Buscar todos os convites com seus convidados
-    const invitesWithGuests = await db
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const groupFilter = searchParams.get('group');
+    const offset = (page - 1) * limit;
+
+    // Construir queries
+    const baseConditions = [];
+    if (groupFilter) {
+      baseConditions.push(eq(invites.group, groupFilter));
+    }
+
+    // Buscar convites com paginação
+    const invitesQuery = db
       .select({
         id: invites.id,
         nameOnInvite: invites.nameOnInvite,
@@ -28,6 +40,33 @@ export async function GET(request: NextRequest) {
         code: invites.code,
       })
       .from(invites);
+
+    if (baseConditions.length > 0) {
+      invitesQuery.where(and(...baseConditions));
+    }
+
+    const invitesWithGuests = await invitesQuery
+      .orderBy(invites.nameOnInvite)
+      .limit(limit)
+      .offset(offset);
+
+    // Buscar total de registros para paginação
+    const totalQuery = db
+      .select({ count: count(invites.id) })
+      .from(invites);
+    
+    if (baseConditions.length > 0) {
+      totalQuery.where(and(...baseConditions));
+    }
+    
+    const [{ count: totalCount }] = await totalQuery;
+
+    // Buscar grupos únicos para o filtro
+    const uniqueGroups = await db
+      .selectDistinct({ group: invites.group })
+      .from(invites)
+      .where(and(isNotNull(invites.group), ne(invites.group, '')))
+      .orderBy(invites.group);
 
     // Para cada convite, buscar os convidados
     const invitesData = await Promise.all(
@@ -48,10 +87,13 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Calcular estatísticas
-    const totalInvites = invitesData.length;
-    const totalGuests = invitesData.reduce((sum, invite) => sum + invite.totalGuests, 0);
-    const confirmedGuests = invitesData.reduce((sum, invite) => sum + invite.confirmedCount, 0);
+    // Calcular estatísticas (baseadas no total, não na página atual)
+    const allInvites = await db.select().from(invites);
+    const allGuests = await db.select().from(guests);
+    
+    const totalInvites = allInvites.length;
+    const totalGuests = allGuests.length;
+    const confirmedGuests = allGuests.filter(guest => guest.confirmed).length;
     const confirmationRate = totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0;
 
     const stats = {
@@ -61,9 +103,20 @@ export async function GET(request: NextRequest) {
       confirmationRate,
     };
 
+    const pagination = {
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasNext: page < Math.ceil(totalCount / limit),
+      hasPrev: page > 1,
+    };
+
     return NextResponse.json({
       invites: invitesData,
       stats,
+      pagination,
+      availableGroups: uniqueGroups.map(g => g.group).filter(Boolean),
     }, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',

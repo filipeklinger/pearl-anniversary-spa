@@ -1,8 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,313 +21,37 @@ import {
   Trash2,
   UserX
 } from "lucide-react"
-import * as XLSX from 'xlsx'
 import Link from "next/link"
-
-interface Invite {
-  id: number
-  nameOnInvite: string
-  ddi?: string
-  phone?: string
-  group?: string
-  observation?: string
-  code?: string
-  guests: Guest[]
-  confirmedCount: number
-  totalGuests: number
-}
-
-interface Guest {
-  id: number
-  fullName: string
-  gender?: string
-  ageGroup?: string
-  costPayment?: string
-  status?: string
-  tableNumber?: number
-  confirmed: boolean
-  inviteId: number
-}
+import { useAdminDashboard } from "@/hooks/useAdminDashboard"
 
 export default function AdminDashboard() {
-  const { data: session, status } = useSession()
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [filteredInvites, setFilteredInvites] = useState<Invite[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isUploading, setIsUploading] = useState(false)
-  const [deletingInvite, setDeletingInvite] = useState<number | null>(null)
-  const [deletingGuest, setDeletingGuest] = useState<number | null>(null)
-  const [uploadFeedback, setUploadFeedback] = useState<{
-    added: number
-    updated: number
-  } | null>(null)
-  const [stats, setStats] = useState({
-    totalInvites: 0,
-    totalGuests: 0,
-    confirmedGuests: 0,
-    confirmationRate: 0
-  })
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === "loading") return
-    if (!session) {
-      router.push("/admin/login")
-      return
-    }
-    fetchInvites()
-  }, [session, status, router])
-
-  useEffect(() => {
-    filterInvites()
-  }, [invites, searchTerm, filter])
-
-  const fetchInvites = async () => {
-    try {
-      const response = await fetch('/api/admin/invites')
-      if (response.ok) {
-        const data = await response.json()
-        setInvites(data.invites)
-        setStats(data.stats)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar convites:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const filterInvites = () => {
-    let filtered = invites
-
-    if (searchTerm) {
-      filtered = filtered.filter(invite => 
-        invite.nameOnInvite.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invite.phone && invite.phone.includes(searchTerm)) ||
-        (invite.guests.some(guest => guest.fullName.toLowerCase().includes(searchTerm.toLowerCase())))
-      )
-    }
-
-    if (filter !== "all") {
-      filtered = filtered.filter(invite => {
-        if (filter === "confirmed") {
-          return invite.confirmedCount > 0
-        } else if (filter === "pending") {
-          return invite.confirmedCount === 0
-        }
-        return true
-      })
-    }
-
-    setFilteredInvites(filtered)
-  }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsUploading(true)
-    setUploadFeedback(null)
-
-    try {
-      const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data, { 
-        type: 'array',
-        codepage: 65001, // UTF-8
-        cellText: false,
-        cellDates: true
-      })
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-      
-      // Converter a planilha em dados brutos primeiro para identificar o cabeçalho correto
-      const rawData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1, // Usar números como índices ao invés de nomes de colunas
-        raw: false,
-        defval: '',
-        blankrows: true
-      }) as any[][]
-
-      console.log('Dados brutos recebidos:', rawData.slice(0, 5)) // Debug das primeiras 5 linhas
-
-      // Encontrar a linha do cabeçalho (procurar pela linha que contém "Nome do convite")
-      let headerRowIndex = -1
-      for (let i = 0; i < Math.min(rawData.length, 5); i++) {
-        const row = rawData[i]
-        if (row && Array.isArray(row) && row.some(cell => 
-          String(cell || '').toLowerCase().includes('nome do convite')
-        )) {
-          headerRowIndex = i
-          break
-        }
-      }
-
-      if (headerRowIndex === -1) {
-        throw new Error('Cabeçalho não encontrado. Verifique se a planilha contém a linha com "Nome do convite *"')
-      }
-
-      console.log(`Cabeçalho encontrado na linha ${headerRowIndex + 1}`)
-
-      // Extrair o cabeçalho
-      const headerRow = rawData[headerRowIndex]
-      
-      // Extrair apenas as linhas de dados (após o cabeçalho)
-      const dataRows = rawData.slice(headerRowIndex + 1).filter(row => 
-        row && Array.isArray(row) && row.some(cell => String(cell || '').trim() !== '')
-      )
-
-      // Converter para formato de objetos usando o cabeçalho correto
-      const jsonData = dataRows.map(row => {
-        const obj: any = {}
-        headerRow.forEach((header, index) => {
-          if (header && String(header).trim()) {
-            obj[String(header)] = row[index] || ''
-          }
-        })
-        return obj
-      })
-
-      console.log('Dados processados:', jsonData.slice(0, 3)) // Debug dos primeiros 3 registros
-
-      const response = await fetch('/api/admin/upload-invites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: jsonData }),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        setUploadFeedback({
-          added: result.added || 0,
-          updated: result.updated || 0
-        })
-        fetchInvites()
-        
-        // Mostrar feedback detalhado
-        const totalProcessed = (result.added || 0) + (result.updated || 0)
-        alert(`Planilha importada com sucesso!\n\n` +
-              `📊 Resumo:\n` +
-              `• ${result.added || 0} novos convites adicionados\n` +
-              `• ${result.updated || 0} convites atualizados\n` +
-              `• ${totalProcessed} total processados`)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        alert(`Erro ao importar planilha: ${errorData.message || 'Erro desconhecido'}`)
-      }
-    } catch (error) {
-      console.error('Erro no upload:', error)
-      alert('Erro ao processar arquivo. Verifique se o formato está correto.')
-    } finally {
-      setIsUploading(false)
-    }
-
-    // Reset do input
-    event.target.value = ''
-  }
-
-  const exportData = async () => {
-    try {
-      const response = await fetch('/api/admin/export-invites')
-      if (response.ok) {
-        const data = await response.json()
-        const worksheet = XLSX.utils.json_to_sheet(data, {
-          header: ['Nome do Convite', 'Telefone', 'Convidado', 'Status'],
-          skipHeader: false
-        })
-        const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Confirmações')
-        
-        // Configurar encoding UTF-8 para exportação
-        XLSX.writeFile(workbook, `confirmacoes_${new Date().toISOString().split('T')[0]}.xlsx`, {
-          bookType: 'xlsx',
-          compression: true,
-          Props: {
-            Title: 'Confirmações de Presença',
-            Subject: 'Bodas de Pérola',
-            CreatedDate: new Date()
-          }
-        })
-      }
-    } catch (error) {
-      console.error('Erro na exportação:', error)
-      alert('Erro ao exportar dados')
-    }
-  }
-
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/admin/login' })
-  }
-
-  const handleDeleteInvite = async (inviteId: number, inviteName: string) => {
-    const confirmed = window.confirm(
-      `⚠️ ATENÇÃO!\n\n` +
-      `Você está prestes a deletar o convite:\n` +
-      `"${inviteName}"\n\n` +
-      `Esta ação irá remover TODOS os convidados associados a este convite.\n\n` +
-      `Esta ação NÃO pode ser desfeita!\n\n` +
-      `Tem certeza que deseja continuar?`
-    )
-
-    if (!confirmed) return
-
-    setDeletingInvite(inviteId)
-
-    try {
-      const response = await fetch(`/api/admin/invites/${inviteId}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        fetchInvites()
-        alert('✅ Convite deletado com sucesso!')
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        alert(`❌ Erro ao deletar convite: ${errorData.message || 'Erro desconhecido'}`)
-      }
-    } catch (error) {
-      console.error('Erro ao deletar convite:', error)
-      alert('❌ Erro ao deletar convite. Tente novamente.')
-    } finally {
-      setDeletingInvite(null)
-    }
-  }
-
-  const handleDeleteGuest = async (guestId: number, guestName: string, inviteName: string) => {
-    const confirmed = window.confirm(
-      `⚠️ Confirmação de Remoção\n\n` +
-      `Remover convidado:\n` +
-      `"${guestName}"\n\n` +
-      `Do convite: "${inviteName}"\n\n` +
-      `Esta ação NÃO pode ser desfeita!\n\n` +
-      `Confirmar remoção?`
-    )
-
-    if (!confirmed) return
-
-    setDeletingGuest(guestId)
-
-    try {
-      const response = await fetch(`/api/admin/guests/${guestId}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        fetchInvites()
-        alert('✅ Convidado removido com sucesso!')
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        alert(`❌ Erro ao remover convidado: ${errorData.message || 'Erro desconhecido'}`)
-      }
-    } catch (error) {
-      console.error('Erro ao remover convidado:', error)
-      alert('❌ Erro ao remover convidado. Tente novamente.')
-    } finally {
-      setDeletingGuest(null)
-    }
-  }
+  const {
+    session,
+    status,
+    filteredInvites,
+    searchTerm,
+    filter,
+    groupFilter,
+    availableGroups,
+    pagination,
+    isLoading,
+    isUploading,
+    deletingInvite,
+    deletingGuest,
+    showManualForm,
+    uploadFeedback,
+    stats,
+    setSearchTerm,
+    setFilter,
+    setShowManualForm,
+    handleFileUpload,
+    exportToExcel,
+    handleSignOut,
+    handleDeleteInvite,
+    handleDeleteGuest,
+    handlePageChange,
+    handleGroupFilterChange
+  } = useAdminDashboard()
 
   if (status === "loading" || isLoading) {
     return (
@@ -343,33 +64,34 @@ export default function AdminDashboard() {
     )
   }
 
+  if (!session) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Heart className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</h1>
-              <p className="text-muted-foreground text-sm">Bodas de Pérola - Robson & Roseli</p>
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div>
+                <h1 className="text-muted-foreground text-sm">Bodas de Pérola</h1>
+                <p className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Configurações
+            
+            <div className="flex items-center space-x-4">
+              <Link href="/admin/settings">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configurações
+                </Button>
+              </Link>
+              <Button onClick={handleSignOut} variant="outline" size="sm">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
               </Button>
-            </Link>
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -386,7 +108,7 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold">{stats.totalInvites}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Convidados</CardTitle>
@@ -396,226 +118,228 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold">{stats.totalGuests}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Confirmados</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.confirmedGuests}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.confirmedGuests}</div>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Taxa de Confirmação</CardTitle>
-              <Heart className="h-4 w-4 text-primary" />
+              <CircleCheckBig className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.confirmationRate.toFixed(1)}%</div>
+              <div className="text-2xl font-bold text-blue-600">{stats.confirmationRate}%</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Upload Feedback */}
         {uploadFeedback && (
-          <Card className="mb-6 border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <CircleCheckBig className="h-5 w-5 text-green-600" />
-                <div>
-                  <h3 className="font-semibold text-green-800">Upload realizado com sucesso!</h3>
-                  <p className="text-sm text-green-700">
-                    {uploadFeedback.added} novos convites adicionados • {uploadFeedback.updated} convites atualizados
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setUploadFeedback(null)}
-                  className="ml-auto text-green-600 hover:text-green-800"
-                >
-                  ✕
-                </Button>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2 text-green-800">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Upload realizado com sucesso!</span>
+            </div>
+            <p className="text-sm text-green-700 mt-1">
+              {uploadFeedback.added} novos convites adicionados, {uploadFeedback.updated} atualizados.
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Ações</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <Label htmlFor="file-upload" className="cursor-pointer">
+                  <Button asChild disabled={isUploading}>
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {isUploading ? "Enviando..." : "Importar Planilha"}
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+              
+              <Button onClick={exportToExcel} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Dados
+              </Button>
+
+              <Button 
+                onClick={() => setShowManualForm(!showManualForm)} 
+                variant="outline"
+              >
+                {showManualForm ? "Cancelar" : "Cadastro Manual"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Manual Form */}
+        {showManualForm && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Cadastro Manual de Convite</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Formulário de cadastro manual será implementado em breve.
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <Label htmlFor="file-upload" className="sr-only">
-              Upload planilha
-            </Label>
-            <div className="relative">
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Button
-                onClick={() => document.getElementById('file-upload')?.click()}
-                className="w-full sm:w-auto"
-                disabled={isUploading}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {isUploading ? 'Importando...' : 'Importar Planilha'}
-              </Button>
-            </div>
-          </div>
-          
-          <Button variant="outline" onClick={exportData}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar Dados
-          </Button>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
+        {/* Filters and Search */}
+        <Card>
           <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Label htmlFor="search">Buscar</Label>
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+              <CardTitle>Lista de Convites</CardTitle>
+              
+              <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-y-0 md:space-x-4">
+                {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    id="search"
-                    placeholder="Buscar por nome ou telefone..."
+                    placeholder="Buscar convites ou convidados..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 min-w-[250px]"
                   />
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="filter">Status</Label>
+
+                {/* Group Filter */}
                 <select
-                  id="filter"
+                  value={groupFilter}
+                  onChange={(e) => handleGroupFilterChange(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                >
+                  <option value="all">Todos os grupos</option>
+                  {availableGroups.map(group => (
+                    <option key={group} value={group}>
+                      {group}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Status Filter */}
+                <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value as "all" | "confirmed" | "pending")}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 >
                   <option value="all">Todos</option>
-                  <option value="confirmed">Com Confirmação</option>
+                  <option value="confirmed">Confirmados</option>
                   <option value="pending">Pendentes</option>
                 </select>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Invites List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Convites ({filteredInvites.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {filteredInvites.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="flex flex-col p-4 border border-border rounded-lg bg-card"
-                >
-                  <div className="flex items-center justify-between mb-3">
+                <div key={invite.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{invite.nameOnInvite}</h3>
-                      <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
-                        {invite.ddi && invite.phone && (
-                          <span>📞 +{invite.ddi} {invite.phone}</span>
-                        )}
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-semibold text-lg">{invite.nameOnInvite}</h3>
                         {invite.group && (
-                          <span>👥 {invite.group}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {invite.group}
+                          </Badge>
                         )}
-                      </div>
-                      {invite.observation && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          💬 {invite.observation}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={invite.confirmedCount > 0 ? "default" : "secondary"}>
-                          {invite.confirmedCount} / {invite.totalGuests} confirmados
+                        <Badge variant={invite.confirmedCount > 0 ? "default" : "outline"}>
+                          {invite.confirmedCount}/{invite.totalGuests} confirmados
                         </Badge>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      {invite.confirmedCount > 0 ? (
-                        <CircleCheckBig className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-400" />
-                      )}
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteInvite(invite.id, invite.nameOnInvite)}
-                        disabled={deletingInvite === invite.id}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 h-8 w-8"
-                        title="Deletar convite inteiro"
-                      >
-                        {deletingInvite === invite.id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+                        {invite.phone && (
+                          <span>📱 {invite.ddi ? `+${invite.ddi} ` : ''}{invite.phone}</span>
                         )}
-                      </Button>
+                        {invite.code && (
+                          <span>🎫 {invite.code}</span>
+                        )}
+                      </div>
+
+                      {invite.observation && (
+                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mb-3">
+                          💬 {invite.observation}
+                        </div>
+                      )}
                     </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteInvite(invite.id, invite.nameOnInvite)}
+                      disabled={deletingInvite === invite.id}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {deletingInvite === invite.id ? (
+                        <div className="animate-spin h-4 w-4 border border-red-500 border-t-transparent rounded-full" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  
-                  {/* Lista de convidados */}
+
                   {invite.guests.length > 0 && (
-                    <div className="border-t border-border pt-3">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Convidados:</h4>
-                      <div className="space-y-2">
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="grid gap-2">
                         {invite.guests.map((guest) => (
-                          <div
-                            key={guest.id}
-                            className="flex items-start gap-2 text-sm group p-2 rounded hover:bg-muted/50"
-                          >
-                            {guest.confirmed ? (
-                              <CircleCheckBig className="h-3 w-3 text-green-600 flex-shrink-0 mt-0.5" />
-                            ) : (
-                              <Circle className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className={`font-medium ${guest.confirmed ? "text-foreground" : "text-muted-foreground"}`}>
-                                {guest.fullName}
-                              </div>
-                              <div className="flex flex-wrap gap-1 mt-1 text-xs text-muted-foreground">
-                                {guest.gender && (
-                                  <span className="bg-blue-100 text-blue-700 px-1 rounded">
-                                    {guest.gender}
-                                  </span>
-                                )}
-                                {guest.ageGroup && (
-                                  <span className="bg-green-100 text-green-700 px-1 rounded">
-                                    {guest.ageGroup}
-                                  </span>
-                                )}
-                                {guest.costPayment && (
-                                  <span className="bg-orange-100 text-orange-700 px-1 rounded">
-                                    {guest.costPayment}
-                                  </span>
-                                )}
-                                {guest.status && (
-                                  <span className="bg-purple-100 text-purple-700 px-1 rounded">
-                                    {guest.status}
-                                  </span>
-                                )}
-                                {guest.tableNumber && (
-                                  <span className="bg-yellow-100 text-yellow-700 px-1 rounded">
-                                    Mesa {guest.tableNumber}
-                                  </span>
-                                )}
+                          <div key={guest.id} className="group flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center space-x-3 flex-1">
+                              {guest.confirmed ? (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <Circle className="h-5 w-5 text-gray-400" />
+                              )}
+                              
+                              <div className="flex-1">
+                                <span className={`font-medium ${guest.confirmed ? 'text-green-700' : 'text-gray-700'}`}>
+                                  {guest.fullName}
+                                </span>
+                                
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {guest.gender && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {guest.gender}
+                                    </Badge>
+                                  )}
+                                  {guest.ageGroup && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {guest.ageGroup}
+                                    </Badge>
+                                  )}
+                                  {guest.status && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {guest.status}
+                                    </Badge>
+                                  )}
+                                  {guest.tableNumber && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Mesa {guest.tableNumber}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             
@@ -650,6 +374,55 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+            
+            {/* Paginação */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Página {pagination.page} de {pagination.totalPages} • {pagination.total} convites no total
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={!pagination.hasPrev}
+                  >
+                    Anterior
+                  </Button>
+                  
+                  {/* Números das páginas */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, pagination.page - 2) + i;
+                      if (pageNum > pagination.totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={pageNum === pagination.page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={!pagination.hasNext}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
