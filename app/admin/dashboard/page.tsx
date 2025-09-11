@@ -18,7 +18,9 @@ import {
   Upload,
   FileSpreadsheet,
   Search,
-  Settings
+  Settings,
+  Circle,
+  CircleCheckBig
 } from "lucide-react"
 import * as XLSX from 'xlsx'
 import Link from "next/link"
@@ -48,6 +50,10 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadFeedback, setUploadFeedback] = useState<{
+    added: number
+    updated: number
+  } | null>(null)
   const [stats, setStats] = useState({
     totalInvites: 0,
     totalGuests: 0,
@@ -113,6 +119,7 @@ export default function AdminDashboard() {
     if (!file) return
 
     setIsUploading(true)
+    setUploadFeedback(null)
 
     try {
       const data = await file.arrayBuffer()
@@ -129,14 +136,27 @@ export default function AdminDashboard() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        setUploadFeedback({
+          added: result.added || 0,
+          updated: result.updated || 0
+        })
         fetchInvites()
-        alert('Planilha importada com sucesso!')
+        
+        // Mostrar feedback detalhado
+        const totalProcessed = (result.added || 0) + (result.updated || 0)
+        alert(`Planilha importada com sucesso!\n\n` +
+              `📊 Resumo:\n` +
+              `• ${result.added || 0} novos convites adicionados\n` +
+              `• ${result.updated || 0} convites atualizados\n` +
+              `• ${totalProcessed} total processados`)
       } else {
-        alert('Erro ao importar planilha')
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Erro ao importar planilha: ${errorData.message || 'Erro desconhecido'}`)
       }
     } catch (error) {
       console.error('Erro no upload:', error)
-      alert('Erro ao processar arquivo')
+      alert('Erro ao processar arquivo. Verifique se o formato está correto.')
     } finally {
       setIsUploading(false)
     }
@@ -251,6 +271,31 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Upload Feedback */}
+        {uploadFeedback && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <CircleCheckBig className="h-5 w-5 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-800">Upload realizado com sucesso!</h3>
+                  <p className="text-sm text-green-700">
+                    {uploadFeedback.added} novos convites adicionados • {uploadFeedback.updated} convites atualizados
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUploadFeedback(null)}
+                  className="ml-auto text-green-600 hover:text-green-800"
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1">
@@ -347,9 +392,9 @@ export default function AdminDashboard() {
                     
                     <div className="flex items-center gap-2">
                       {invite.confirmedCount > 0 ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CircleCheckBig className="h-5 w-5 text-green-600" />
                       ) : (
-                        <XCircle className="h-5 w-5 text-red-600" />
+                        <Circle className="h-5 w-5 text-gray-400" />
                       )}
                     </div>
                   </div>
@@ -365,9 +410,9 @@ export default function AdminDashboard() {
                             className="flex items-center gap-2 text-sm"
                           >
                             {guest.confirmed ? (
-                              <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
+                              <CircleCheckBig className="h-3 w-3 text-green-600 flex-shrink-0" />
                             ) : (
-                              <XCircle className="h-3 w-3 text-red-600 flex-shrink-0" />
+                              <Circle className="h-3 w-3 text-gray-400 flex-shrink-0" />
                             )}
                             <span className={guest.confirmed ? "text-foreground" : "text-muted-foreground"}>
                               {guest.fullName}

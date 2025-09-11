@@ -61,6 +61,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       invites: invitesData,
       stats,
+    }, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
     });
 
   } catch (error) {

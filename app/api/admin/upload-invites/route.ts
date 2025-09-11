@@ -31,9 +31,12 @@ export async function POST(request: NextRequest) {
 
     // Processar cada linha da planilha
     // Formato esperado: Nome do Convite, Telefone (opcional), Convidado 1, Convidado 2, etc.
+    let addedCount = 0;
+    let updatedCount = 0;
+
     for (const row of data as SpreadsheetRow[]) {
-      const nameOnInvite = row['Nome do Convite'] || row['nome_convite'] || row['Nome'] || '';
-      const phone = row['Telefone'] || row['telefone'] || row['Phone'] || '';
+      const nameOnInvite = String(row['Nome do Convite'] || row['nome_convite'] || row['Nome'] || '').trim();
+      const phone = String(row['Telefone'] || row['telefone'] || row['Phone'] || '').trim();
       
       if (!nameOnInvite) continue;
 
@@ -55,6 +58,7 @@ export async function POST(request: NextRequest) {
           })
           .where(eq(invites.id, existingInvite[0].id))
           .returning();
+        updatedCount++;
       } else {
         // Criar novo convite
         invite = await db
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest) {
             phone: phone || undefined,
           })
           .returning();
+        addedCount++;
       }
 
       const inviteId = invite[0].id;
@@ -90,14 +95,14 @@ export async function POST(request: NextRequest) {
 
       // Adicionar novos convidados
       const guestNames = guestColumns
-        .map(col => row[col])
-        .filter(name => name && typeof name === 'string' && name.trim() !== '');
+        .map(col => String(row[col] || '').trim())
+        .filter(name => name && name !== '');
 
       if (guestNames.length > 0) {
         await db.insert(guests).values(
           guestNames.map(name => ({
             inviteId,
-            fullName: name.trim(),
+            fullName: name,
             confirmed: false,
           }))
         );
@@ -105,8 +110,18 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: 'Planilha importada com sucesso' },
-      { status: 200 }
+      { 
+        message: 'Planilha importada com sucesso',
+        added: addedCount,
+        updated: updatedCount,
+        total: addedCount + updatedCount
+      },
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+        },
+      }
     );
 
   } catch (error) {
