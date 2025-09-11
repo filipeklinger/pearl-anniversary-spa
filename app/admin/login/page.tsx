@@ -24,10 +24,10 @@ export default function AdminLogin() {
     setError("")
 
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn('credentials?callbackUrl=/admin/dashboard', {
         email: credentials.email,
         password: credentials.password,
-        redirect: false,
+        redirect: true,
       })
 
       if (result?.error) {
