@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Heart, Lock, Eye, EyeOff } from "lucide-react"
 
 export default function AdminLogin() {
-  const [credentials, setCredentials] = useState({ username: "", password: "" })
+  const [credentials, setCredentials] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -22,15 +23,20 @@ export default function AdminLogin() {
     setIsLoading(true)
     setError("")
 
-    // Simular autenticação - em produção seria uma API real
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const result = await signIn('credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        redirect: false,
+      })
 
-    // Credenciais simples para demonstração
-    if (credentials.username === "robson" && credentials.password === "roseli2024") {
-      localStorage.setItem("admin-authenticated", "true")
-      router.push("/admin/dashboard")
-    } else {
-      setError("Usuário ou senha incorretos")
+      if (result?.error) {
+        setError("Email ou senha incorretos")
+      } else {
+        router.push("/admin/dashboard")
+      }
+    } catch (error) {
+      setError("Erro ao fazer login. Tente novamente.")
     }
 
     setIsLoading(false)
@@ -53,15 +59,15 @@ export default function AdminLogin() {
           <CardContent className="p-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-slate-800">
-                  Usuário
+                <Label htmlFor="email" className="text-slate-800">
+                  Email
                 </Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Digite seu usuário"
-                  value={credentials.username}
-                  onChange={(e) => setCredentials((prev) => ({ ...prev, username: e.target.value }))}
+                  id="email"
+                  type="email"
+                  placeholder="Digite seu email"
+                  value={credentials.email}
+                  onChange={(e) => setCredentials((prev) => ({ ...prev, email: e.target.value }))}
                   required
                   className="bg-input border-border"
                 />

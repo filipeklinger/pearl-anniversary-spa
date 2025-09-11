@@ -3,7 +3,7 @@
 import { ChevronDown, Heart, MapPin, Calendar, Navigation, Phone, Car, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import RSVPForm from "@/components/rsvp-form"
+import RSVPForm from "@/components/rsvp-form-new"
 import PhotoGallery from "@/components/photo-gallery"
 import Link from "next/link"
 

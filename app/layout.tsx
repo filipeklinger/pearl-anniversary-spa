@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import ClientLayout from "./ClientLayout"
+import NextAuthProvider from "@/components/next-auth-provider"
 
 export const metadata: Metadata = {
   title: "Bodas de Pérola - Robson & Roseli",
@@ -14,5 +15,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return <ClientLayout>{children}</ClientLayout>
+  return (
+    <NextAuthProvider>
+      <ClientLayout>{children}</ClientLayout>
+    </NextAuthProvider>
+  )
 }
