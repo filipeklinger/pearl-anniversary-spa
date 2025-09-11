@@ -8,16 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, Settings, Save, ArrowLeft } from "lucide-react"
+import { Heart, Settings, Save, ArrowLeft, UserPlus, Trash2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 
 export default function AdminSettings() {
   const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
   const [settings, setSettings] = useState({
     thankYouMessage: "",
     confirmationDeadline: "",
+  })
+  const [newAdmin, setNewAdmin] = useState({
+    email: "",
+    password: "",
+    confirmPassword: ""
   })
   const [message, setMessage] = useState("")
   const router = useRouter()
@@ -83,6 +90,109 @@ export default function AdminSettings() {
       setMessage("Erro ao salvar configurações. Tente novamente.")
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleCreateAdmin = async () => {
+    if (newAdmin.password !== newAdmin.confirmPassword) {
+      setMessage("As senhas não coincidem!")
+      return
+    }
+
+    if (newAdmin.password.length < 6) {
+      setMessage("A senha deve ter pelo menos 6 caracteres!")
+      return
+    }
+
+    setIsCreatingAdmin(true)
+    setMessage("")
+
+    try {
+      const response = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newAdmin.email,
+          password: newAdmin.password,
+        }),
+      })
+
+      if (response.ok) {
+        setMessage("Admin criado com sucesso!")
+        setNewAdmin({ email: "", password: "", confirmPassword: "" })
+        setTimeout(() => setMessage(""), 3000)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setMessage(`Erro ao criar admin: ${errorData.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao criar admin:', error)
+      setMessage("Erro ao criar admin. Tente novamente.")
+    } finally {
+      setIsCreatingAdmin(false)
+    }
+  }
+
+  const handleDeleteAllData = async () => {
+    const confirmText = window.prompt(
+      `🚨 PERIGO EXTREMO! 🚨\n\n` +
+      `Você está prestes a DELETAR TODOS OS DADOS:\n\n` +
+      `• TODOS os convites\n` +
+      `• TODOS os convidados\n` +
+      `• TODAS as confirmações\n` +
+      `• TODAS as configurações\n\n` +
+      `Esta ação é IRREVERSÍVEL!\n` +
+      `Todos os dados serão perdidos para sempre!\n\n` +
+      `Digite "DELETAR TUDO" para confirmar:`
+    )
+
+    if (confirmText !== "DELETAR TUDO") {
+      if (confirmText) {
+        alert("Confirmação incorreta. Operação cancelada por segurança.")
+      }
+      return
+    }
+
+    const doubleCheck = window.confirm(
+      `ÚLTIMA CONFIRMAÇÃO!\n\n` +
+      `Tem ABSOLUTA CERTEZA que deseja deletar TODOS os dados?\n\n` +
+      `Esta ação NÃO pode ser desfeita!`
+    )
+
+    if (!doubleCheck) return
+
+    setIsDeletingAll(true)
+    setMessage("")
+
+    try {
+      const response = await fetch('/api/admin/delete-all-data', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmText: confirmText,
+        }),
+      })
+
+      if (response.ok) {
+        setMessage("✅ Todos os dados foram deletados com sucesso!")
+        // Reset local state
+        setSettings({
+          thankYouMessage: "Obrigado pela confirmação! Sua presença é muito importante para nós. 💕",
+          confirmationDeadline: "",
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setMessage(`❌ Erro ao deletar dados: ${errorData.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao deletar dados:', error)
+      setMessage("❌ Erro ao deletar dados. Tente novamente.")
+    } finally {
+      setIsDeletingAll(false)
     }
   }
 
@@ -169,7 +279,6 @@ export default function AdminSettings() {
               </div>
             </CardContent>
           </Card>
-
           {/* Botão Salvar */}
           <div className="flex justify-end gap-4">
             <Button
@@ -192,6 +301,100 @@ export default function AdminSettings() {
               {message}
             </div>
           )}
+
+          {/* Cadastro de Admin */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Cadastrar Novo Administrador
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="adminEmail">Email do Administrador</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    value={newAdmin.email}
+                    onChange={(e) => setNewAdmin(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="admin@exemplo.com"
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="adminPassword">Senha</Label>
+                  <Input
+                    id="adminPassword"
+                    type="password"
+                    value={newAdmin.password}
+                    onChange={(e) => setNewAdmin(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Mínimo 6 caracteres"
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={newAdmin.confirmPassword}
+                  onChange={(e) => setNewAdmin(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Digite a senha novamente"
+                  className="mt-2"
+                />
+              </div>
+              <Button
+                onClick={handleCreateAdmin}
+                disabled={isCreatingAdmin || !newAdmin.email || !newAdmin.password || !newAdmin.confirmPassword}
+                className="w-full"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                {isCreatingAdmin ? "Criando..." : "Criar Administrador"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="w-5 h-5" />
+                Zona de Perigo
+              </CardTitle>
+              <p className="text-sm text-red-600">
+                Ações irreversíveis que podem causar perda permanente de dados.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-white p-4 rounded-lg border border-red-200">
+                <h3 className="font-semibold text-red-700 mb-2">Deletar Todos os Dados</h3>
+                <p className="text-sm text-red-600 mb-4">
+                  Esta ação irá deletar permanentemente:
+                </p>
+                <ul className="text-sm text-red-600 mb-4 list-disc list-inside space-y-1">
+                  <li>Todos os convites cadastrados</li>
+                  <li>Todos os convidados</li>
+                  <li>Todas as confirmações de presença</li>
+                  <li>Todas as configurações personalizadas</li>
+                </ul>
+                <p className="text-sm font-semibold text-red-700 mb-4">
+                  ⚠️ Esta ação NÃO pode ser desfeita!
+                </p>
+                <Button
+                  onClick={handleDeleteAllData}
+                  disabled={isDeletingAll}
+                  variant="destructive"
+                  className="w-full bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isDeletingAll ? "Deletando..." : "Deletar Todos os Dados"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
