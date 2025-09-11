@@ -100,7 +100,8 @@ export default function AdminDashboard() {
     if (searchTerm) {
       filtered = filtered.filter(invite => 
         invite.nameOnInvite.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invite.phone && invite.phone.includes(searchTerm))
+        (invite.phone && invite.phone.includes(searchTerm)) ||
+        (invite.guests.some(guest => guest.fullName.toLowerCase().includes(searchTerm.toLowerCase())))
       )
     }
 
