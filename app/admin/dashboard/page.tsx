@@ -305,8 +305,8 @@ export default function AdminDashboard() {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="grid gap-2">
                         {invite.guests.map((guest) => (
-                          <div key={guest.id} className="group flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center space-x-3 flex-1">
+                          <div key={guest.id} className="group flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="flex items-center space-x-3 flex-1" title={guest.confirmed ? "Confirmado" : "Não confirmado"}>
                               {guest.confirmed ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
                               ) : (
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
                               size="sm"
                               onClick={() => handleDeleteGuest(guest.id, guest.fullName, invite.nameOnInvite)}
                               disabled={deletingGuest === guest.id}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 h-6 w-6"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-100 p-0.5 h-6 w-6"
                               title={`Remover ${guest.fullName}`}
                             >
                               {deletingGuest === guest.id ? (
