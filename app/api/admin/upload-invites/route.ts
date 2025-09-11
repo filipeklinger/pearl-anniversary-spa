@@ -31,38 +31,62 @@ export async function POST(request: NextRequest) {
 
     console.log('Dados recebidos:', JSON.stringify(data[0], null, 2)); // Debug
 
-    // Processar cada linha da planilha
+    // Processar cada linha da planilha e agrupar por convite
     let addedCount = 0;
     let updatedCount = 0;
 
-    // Agrupar linhas por convite (Nome do convite)
+    // Agrupar linhas por convite baseado na lógica:
+    // - Quando "Nome do convite" tem valor, inicia um novo grupo
+    // - Quando "Nome do convite" está vazio, pertence ao grupo anterior
     const inviteGroups = new Map<string, any[]>();
+    let currentInviteName = '';
     
     for (const row of data as SpreadsheetRow[]) {
       const nameOnInvite = String(row['Nome do convite *'] || row['Nome do convite'] || '').trim();
       
-      if (!nameOnInvite) {
-        console.log('Linha ignorada - sem nome do convite:', row);
+      // Se tem nome do convite, atualiza o grupo atual
+      if (nameOnInvite) {
+        currentInviteName = nameOnInvite;
+      }
+      
+      // Se não temos um nome de convite atual, pula esta linha
+      if (!currentInviteName) {
+        console.log('Linha ignorada - sem convite de referência:', row);
         continue;
       }
 
-      if (!inviteGroups.has(nameOnInvite)) {
-        inviteGroups.set(nameOnInvite, []);
+      // Adiciona a linha ao grupo do convite atual
+      if (!inviteGroups.has(currentInviteName)) {
+        inviteGroups.set(currentInviteName, []);
       }
-      inviteGroups.get(nameOnInvite)!.push(row);
+      inviteGroups.get(currentInviteName)!.push({
+        ...row,
+        '_inviteName': currentInviteName // Garantir que temos o nome do convite
+      });
     }
+
+    console.log(`Processando ${inviteGroups.size} convites agrupados`);
 
     // Processar cada grupo de convite
     for (const [nameOnInvite, rows] of inviteGroups) {
       const firstRow = rows[0];
       
-      // Extrair dados do convite da primeira linha
-      const ddi = String(firstRow['DDI'] || '').trim();
-      const phone = String(firstRow['DDD + Telefone para confirmação de presença'] || '').trim();
-      const group = String(firstRow['Grupo do convite'] || '').trim();
-      const observation = String(firstRow['Observação do convite'] || '').trim();
+      // Extrair dados do convite da primeira linha que tem dados do convite
+      let inviteDataRow = firstRow;
+      for (const row of rows) {
+        const rowNameOnInvite = String(row['Nome do convite *'] || row['Nome do convite'] || '').trim();
+        if (rowNameOnInvite) {
+          inviteDataRow = row;
+          break;
+        }
+      }
+      
+      const ddi = String(inviteDataRow['DDI'] || '').trim();
+      const phone = String(inviteDataRow['DDD + Telefone para confirmação de presença'] || '').trim();
+      const group = String(inviteDataRow['Grupo do convite'] || '').trim();
+      const observation = String(inviteDataRow['Observação do convite'] || '').trim();
 
-      console.log(`Processando convite: ${nameOnInvite}, DDI: ${ddi}, Telefone: ${phone}, Grupo: ${group}`);
+      console.log(`Processando convite: ${nameOnInvite}, DDI: ${ddi}, Telefone: ${phone}, Grupo: ${group}, ${rows.length} linhas`);
 
       // Criar ou atualizar convite
       let invite;
@@ -135,6 +159,7 @@ export async function POST(request: NextRequest) {
       // Adicionar novos convidados
       if (guestsToAdd.length > 0) {
         await db.insert(guests).values(guestsToAdd);
+        console.log(`Adicionados ${guestsToAdd.length} convidados para ${nameOnInvite}`);
       }
     }
 
