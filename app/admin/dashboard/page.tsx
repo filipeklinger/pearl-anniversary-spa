@@ -20,7 +20,9 @@ import {
   Search,
   Settings,
   Circle,
-  CircleCheckBig
+  CircleCheckBig,
+  Trash2,
+  UserX
 } from "lucide-react"
 import * as XLSX from 'xlsx'
 import Link from "next/link"
@@ -50,6 +52,8 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
+  const [deletingInvite, setDeletingInvite] = useState<number | null>(null)
+  const [deletingGuest, setDeletingGuest] = useState<number | null>(null)
   const [uploadFeedback, setUploadFeedback] = useState<{
     added: number
     updated: number
@@ -205,6 +209,74 @@ export default function AdminDashboard() {
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/admin/login' })
+  }
+
+  const handleDeleteInvite = async (inviteId: number, inviteName: string) => {
+    const confirmed = window.confirm(
+      `⚠️ ATENÇÃO!\n\n` +
+      `Você está prestes a deletar o convite:\n` +
+      `"${inviteName}"\n\n` +
+      `Esta ação irá remover TODOS os convidados associados a este convite.\n\n` +
+      `Esta ação NÃO pode ser desfeita!\n\n` +
+      `Tem certeza que deseja continuar?`
+    )
+
+    if (!confirmed) return
+
+    setDeletingInvite(inviteId)
+
+    try {
+      const response = await fetch(`/api/admin/invites/${inviteId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        fetchInvites()
+        alert('✅ Convite deletado com sucesso!')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`❌ Erro ao deletar convite: ${errorData.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao deletar convite:', error)
+      alert('❌ Erro ao deletar convite. Tente novamente.')
+    } finally {
+      setDeletingInvite(null)
+    }
+  }
+
+  const handleDeleteGuest = async (guestId: number, guestName: string, inviteName: string) => {
+    const confirmed = window.confirm(
+      `⚠️ Confirmação de Remoção\n\n` +
+      `Remover convidado:\n` +
+      `"${guestName}"\n\n` +
+      `Do convite: "${inviteName}"\n\n` +
+      `Esta ação NÃO pode ser desfeita!\n\n` +
+      `Confirmar remoção?`
+    )
+
+    if (!confirmed) return
+
+    setDeletingGuest(guestId)
+
+    try {
+      const response = await fetch(`/api/admin/guests/${guestId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        fetchInvites()
+        alert('✅ Convidado removido com sucesso!')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`❌ Erro ao remover convidado: ${errorData.message || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao remover convidado:', error)
+      alert('❌ Erro ao remover convidado. Tente novamente.')
+    } finally {
+      setDeletingGuest(null)
+    }
   }
 
   if (status === "loading" || isLoading) {
@@ -418,6 +490,21 @@ export default function AdminDashboard() {
                       ) : (
                         <Circle className="h-5 w-5 text-gray-400" />
                       )}
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteInvite(invite.id, invite.nameOnInvite)}
+                        disabled={deletingInvite === invite.id}
+                        className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 h-8 w-8"
+                        title="Deletar convite inteiro"
+                      >
+                        {deletingInvite === invite.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                   
@@ -429,16 +516,31 @@ export default function AdminDashboard() {
                         {invite.guests.map((guest) => (
                           <div
                             key={guest.id}
-                            className="flex items-center gap-2 text-sm"
+                            className="flex items-center gap-2 text-sm group"
                           >
                             {guest.confirmed ? (
                               <CircleCheckBig className="h-3 w-3 text-green-600 flex-shrink-0" />
                             ) : (
                               <Circle className="h-3 w-3 text-gray-400 flex-shrink-0" />
                             )}
-                            <span className={guest.confirmed ? "text-foreground" : "text-muted-foreground"}>
+                            <span className={`flex-1 ${guest.confirmed ? "text-foreground" : "text-muted-foreground"}`}>
                               {guest.fullName}
                             </span>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteGuest(guest.id, guest.fullName, invite.nameOnInvite)}
+                              disabled={deletingGuest === guest.id}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 h-6 w-6"
+                              title={`Remover ${guest.fullName}`}
+                            >
+                              {deletingGuest === guest.id ? (
+                                <div className="animate-spin h-3 w-3 border border-red-500 border-t-transparent rounded-full" />
+                              ) : (
+                                <UserX className="h-3 w-3" />
+                              )}
+                            </Button>
                           </div>
                         ))}
                       </div>
