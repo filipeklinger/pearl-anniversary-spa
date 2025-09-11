@@ -123,9 +123,18 @@ export default function AdminDashboard() {
 
     try {
       const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data)
+      const workbook = XLSX.read(data, { 
+        type: 'array',
+        codepage: 65001, // UTF-8
+        cellText: false,
+        cellDates: true
+      })
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet)
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        raw: false,
+        defval: '',
+        blankrows: false
+      })
 
       const response = await fetch('/api/admin/upload-invites', {
         method: 'POST',
@@ -170,10 +179,23 @@ export default function AdminDashboard() {
       const response = await fetch('/api/admin/export-invites')
       if (response.ok) {
         const data = await response.json()
-        const worksheet = XLSX.utils.json_to_sheet(data)
+        const worksheet = XLSX.utils.json_to_sheet(data, {
+          header: ['Nome do Convite', 'Telefone', 'Convidado', 'Status'],
+          skipHeader: false
+        })
         const workbook = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Confirmações')
-        XLSX.writeFile(workbook, `confirmacoes_${new Date().toISOString().split('T')[0]}.xlsx`)
+        
+        // Configurar encoding UTF-8 para exportação
+        XLSX.writeFile(workbook, `confirmacoes_${new Date().toISOString().split('T')[0]}.xlsx`, {
+          bookType: 'xlsx',
+          compression: true,
+          Props: {
+            Title: 'Confirmações de Presença',
+            Subject: 'Bodas de Pérola',
+            CreatedDate: new Date()
+          }
+        })
       }
     } catch (error) {
       console.error('Erro na exportação:', error)

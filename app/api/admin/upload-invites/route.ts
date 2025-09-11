@@ -29,16 +29,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Dados recebidos:', JSON.stringify(data[0], null, 2)); // Debug
+
     // Processar cada linha da planilha
     // Formato esperado: Nome do Convite, Telefone (opcional), Convidado 1, Convidado 2, etc.
     let addedCount = 0;
     let updatedCount = 0;
 
     for (const row of data as SpreadsheetRow[]) {
-      const nameOnInvite = String(row['Nome do Convite'] || row['nome_convite'] || row['Nome'] || '').trim();
-      const phone = String(row['Telefone'] || row['telefone'] || row['Phone'] || '').trim();
+      // Detectar diferentes formatos de colunas
+      const possibleNameColumns = ['Nome do Convite', 'nome_convite', 'Nome', 'name', 'Name'];
+      const possiblePhoneColumns = ['Telefone', 'telefone', 'Phone', 'phone', 'Celular', 'celular'];
       
-      if (!nameOnInvite) continue;
+      const nameOnInvite = possibleNameColumns
+        .map(col => String(row[col] || '').trim())
+        .find(name => name !== '') || '';
+        
+      const phone = possiblePhoneColumns
+        .map(col => String(row[col] || '').trim())
+        .find(phone => phone !== '') || '';
+      
+      if (!nameOnInvite) {
+        console.log('Linha ignorada - sem nome:', row);
+        continue;
+      }
+
+      console.log(`Processando: ${nameOnInvite}, ${phone}`); // Debug
 
       // Criar ou atualizar convite
       let invite;
