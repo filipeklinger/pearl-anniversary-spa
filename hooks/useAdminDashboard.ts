@@ -39,8 +39,9 @@ interface Pagination {
 
 export function useAdminDashboard() {
   const { data: session, status } = useSession()
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [filteredInvites, setFilteredInvites] = useState<Invite[]>([])
+  const [allInvites, setAllInvites] = useState<Invite[]>([]) // Todos os convites
+  const [filteredInvites, setFilteredInvites] = useState<Invite[]>([]) // Convites filtrados
+  const [paginatedInvites, setPaginatedInvites] = useState<Invite[]>([]) // Convites da página atual
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
   const [groupFilter, setGroupFilter] = useState<string>("all")
@@ -78,24 +79,17 @@ export function useAdminDashboard() {
     }
   }, [session, status, router])
 
-  // Fetch invites with pagination and filters
+  // Fetch all invites (once)
   const fetchInvites = async () => {
     try {
       setIsLoading(true)
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(groupFilter !== 'all' && { group: groupFilter })
-      })
-
-      const response = await fetch(`/api/admin/invites?${params}`)
+      const response = await fetch(`/api/admin/invites`)
       if (response.ok) {
         const data = await response.json()
-        setInvites(data.invites)
-        setPagination(data.pagination)
+        setAllInvites(data.invites)
         setAvailableGroups(data.availableGroups || [])
         
-        // Use stats from API instead of calculating locally
+        // Use stats from API
         setStats(data.stats || {
           totalInvites: 0,
           totalGuests: 0,
@@ -110,17 +104,18 @@ export function useAdminDashboard() {
     }
   }
 
-  // Initial data fetch
+  // Initial data fetch (only once)
   useEffect(() => {
     if (session) {
       fetchInvites()
     }
-  }, [session, pagination.page, pagination.limit, groupFilter])
+  }, [session])
 
-  // Filter invites based on search term and status
+  // Apply all filters in frontend
   useEffect(() => {
-    let filtered = invites
+    let filtered = allInvites
 
+    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(invite =>
         invite.nameOnInvite.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,6 +125,12 @@ export function useAdminDashboard() {
       )
     }
 
+    // Filter by group
+    if (groupFilter !== "all") {
+      filtered = filtered.filter(invite => invite.group === groupFilter)
+    }
+
+    // Filter by confirmation status
     if (filter !== "all") {
       filtered = filtered.filter(invite => {
         const hasConfirmed = invite.guests.some(guest => guest.confirmed)
@@ -138,7 +139,31 @@ export function useAdminDashboard() {
     }
 
     setFilteredInvites(filtered)
-  }, [invites, searchTerm, filter])
+
+    // Update pagination based on filtered results
+    const totalPages = Math.ceil(filtered.length / pagination.limit)
+    const newPagination = {
+      ...pagination,
+      total: filtered.length,
+      totalPages,
+      hasNext: pagination.page < totalPages,
+      hasPrev: pagination.page > 1,
+    }
+    
+    // Adjust current page if it's beyond the available pages
+    if (pagination.page > totalPages && totalPages > 0) {
+      newPagination.page = 1
+    }
+
+    setPagination(newPagination)
+  }, [allInvites, searchTerm, filter, groupFilter, pagination.limit])
+
+  // Apply pagination to filtered results
+  useEffect(() => {
+    const startIndex = (pagination.page - 1) * pagination.limit
+    const endIndex = startIndex + pagination.limit
+    setPaginatedInvites(filteredInvites.slice(startIndex, endIndex))
+  }, [filteredInvites, pagination.page, pagination.limit])
 
   // File upload handler
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,8 +309,8 @@ export function useAdminDashboard() {
     // Data
     session,
     status,
-    invites,
-    filteredInvites,
+    allInvites,
+    filteredInvites: paginatedInvites, // Return paginated results
     searchTerm,
     filter,
     groupFilter,
