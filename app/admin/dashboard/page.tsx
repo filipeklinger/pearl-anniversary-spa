@@ -30,7 +30,10 @@ import Link from "next/link"
 interface Invite {
   id: number
   nameOnInvite: string
+  ddi?: string
   phone?: string
+  group?: string
+  observation?: string
   code?: string
   guests: Guest[]
   confirmedCount: number
@@ -40,6 +43,11 @@ interface Invite {
 interface Guest {
   id: number
   fullName: string
+  gender?: string
+  ageGroup?: string
+  costPayment?: string
+  status?: string
+  tableNumber?: number
   confirmed: boolean
   inviteId: number
 }
@@ -135,11 +143,55 @@ export default function AdminDashboard() {
         cellDates: true
       })
       const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      
+      // Converter a planilha em dados brutos primeiro para identificar o cabeçalho correto
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1, // Usar números como índices ao invés de nomes de colunas
         raw: false,
         defval: '',
-        blankrows: false
+        blankrows: true
+      }) as any[][]
+
+      console.log('Dados brutos recebidos:', rawData.slice(0, 5)) // Debug das primeiras 5 linhas
+
+      // Encontrar a linha do cabeçalho (procurar pela linha que contém "Nome do convite")
+      let headerRowIndex = -1
+      for (let i = 0; i < Math.min(rawData.length, 5); i++) {
+        const row = rawData[i]
+        if (row && Array.isArray(row) && row.some(cell => 
+          String(cell || '').toLowerCase().includes('nome do convite')
+        )) {
+          headerRowIndex = i
+          break
+        }
+      }
+
+      if (headerRowIndex === -1) {
+        throw new Error('Cabeçalho não encontrado. Verifique se a planilha contém a linha com "Nome do convite *"')
+      }
+
+      console.log(`Cabeçalho encontrado na linha ${headerRowIndex + 1}`)
+
+      // Extrair o cabeçalho
+      const headerRow = rawData[headerRowIndex]
+      
+      // Extrair apenas as linhas de dados (após o cabeçalho)
+      const dataRows = rawData.slice(headerRowIndex + 1).filter(row => 
+        row && Array.isArray(row) && row.some(cell => String(cell || '').trim() !== '')
+      )
+
+      // Converter para formato de objetos usando o cabeçalho correto
+      const jsonData = dataRows.map(row => {
+        const obj: any = {}
+        headerRow.forEach((header, index) => {
+          if (header && String(header).trim()) {
+            obj[String(header)] = row[index] || ''
+          }
+        })
+        return obj
       })
+
+      console.log('Dados processados:', jsonData.slice(0, 3)) // Debug dos primeiros 3 registros
 
       const response = await fetch('/api/admin/upload-invites', {
         method: 'POST',
@@ -475,10 +527,20 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">{invite.nameOnInvite}</h3>
-                      {invite.phone && (
-                        <p className="text-sm text-muted-foreground">{invite.phone}</p>
+                      <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
+                        {invite.ddi && invite.phone && (
+                          <span>📞 +{invite.ddi} {invite.phone}</span>
+                        )}
+                        {invite.group && (
+                          <span>👥 {invite.group}</span>
+                        )}
+                      </div>
+                      {invite.observation && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          💬 {invite.observation}
+                        </p>
                       )}
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-2">
                         <Badge variant={invite.confirmedCount > 0 ? "default" : "secondary"}>
                           {invite.confirmedCount} / {invite.totalGuests} confirmados
                         </Badge>
@@ -513,20 +575,49 @@ export default function AdminDashboard() {
                   {invite.guests.length > 0 && (
                     <div className="border-t border-border pt-3">
                       <h4 className="text-sm font-medium text-muted-foreground mb-2">Convidados:</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
                         {invite.guests.map((guest) => (
                           <div
                             key={guest.id}
-                            className="flex items-center gap-2 text-sm group"
+                            className="flex items-start gap-2 text-sm group p-2 rounded hover:bg-muted/50"
                           >
                             {guest.confirmed ? (
-                              <CircleCheckBig className="h-3 w-3 text-green-600 flex-shrink-0" />
+                              <CircleCheckBig className="h-3 w-3 text-green-600 flex-shrink-0 mt-0.5" />
                             ) : (
-                              <Circle className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                              <Circle className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
                             )}
-                            <span className={`flex-1 ${guest.confirmed ? "text-foreground" : "text-muted-foreground"}`}>
-                              {guest.fullName}
-                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-medium ${guest.confirmed ? "text-foreground" : "text-muted-foreground"}`}>
+                                {guest.fullName}
+                              </div>
+                              <div className="flex flex-wrap gap-1 mt-1 text-xs text-muted-foreground">
+                                {guest.gender && (
+                                  <span className="bg-blue-100 text-blue-700 px-1 rounded">
+                                    {guest.gender}
+                                  </span>
+                                )}
+                                {guest.ageGroup && (
+                                  <span className="bg-green-100 text-green-700 px-1 rounded">
+                                    {guest.ageGroup}
+                                  </span>
+                                )}
+                                {guest.costPayment && (
+                                  <span className="bg-orange-100 text-orange-700 px-1 rounded">
+                                    {guest.costPayment}
+                                  </span>
+                                )}
+                                {guest.status && (
+                                  <span className="bg-purple-100 text-purple-700 px-1 rounded">
+                                    {guest.status}
+                                  </span>
+                                )}
+                                {guest.tableNumber && (
+                                  <span className="bg-yellow-100 text-yellow-700 px-1 rounded">
+                                    Mesa {guest.tableNumber}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                             
                             <Button
                               variant="ghost"

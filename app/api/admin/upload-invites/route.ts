@@ -32,29 +32,37 @@ export async function POST(request: NextRequest) {
     console.log('Dados recebidos:', JSON.stringify(data[0], null, 2)); // Debug
 
     // Processar cada linha da planilha
-    // Formato esperado: Nome do Convite, Telefone (opcional), Convidado 1, Convidado 2, etc.
     let addedCount = 0;
     let updatedCount = 0;
 
+    // Agrupar linhas por convite (Nome do convite)
+    const inviteGroups = new Map<string, any[]>();
+    
     for (const row of data as SpreadsheetRow[]) {
-      // Detectar diferentes formatos de colunas
-      const possibleNameColumns = ['Nome do Convite', 'nome_convite', 'Nome', 'name', 'Name'];
-      const possiblePhoneColumns = ['Telefone', 'telefone', 'Phone', 'phone', 'Celular', 'celular'];
-      
-      const nameOnInvite = possibleNameColumns
-        .map(col => String(row[col] || '').trim())
-        .find(name => name !== '') || '';
-        
-      const phone = possiblePhoneColumns
-        .map(col => String(row[col] || '').trim())
-        .find(phone => phone !== '') || '';
+      const nameOnInvite = String(row['Nome do convite *'] || row['Nome do convite'] || '').trim();
       
       if (!nameOnInvite) {
-        console.log('Linha ignorada - sem nome:', row);
+        console.log('Linha ignorada - sem nome do convite:', row);
         continue;
       }
 
-      console.log(`Processando: ${nameOnInvite}, ${phone}`); // Debug
+      if (!inviteGroups.has(nameOnInvite)) {
+        inviteGroups.set(nameOnInvite, []);
+      }
+      inviteGroups.get(nameOnInvite)!.push(row);
+    }
+
+    // Processar cada grupo de convite
+    for (const [nameOnInvite, rows] of inviteGroups) {
+      const firstRow = rows[0];
+      
+      // Extrair dados do convite da primeira linha
+      const ddi = String(firstRow['DDI'] || '').trim();
+      const phone = String(firstRow['DDD + Telefone para confirmação de presença'] || '').trim();
+      const group = String(firstRow['Grupo do convite'] || '').trim();
+      const observation = String(firstRow['Observação do convite'] || '').trim();
+
+      console.log(`Processando convite: ${nameOnInvite}, DDI: ${ddi}, Telefone: ${phone}, Grupo: ${group}`);
 
       // Criar ou atualizar convite
       let invite;
@@ -69,7 +77,10 @@ export async function POST(request: NextRequest) {
         invite = await db
           .update(invites)
           .set({
+            ddi: ddi || undefined,
             phone: phone || undefined,
+            group: group || undefined,
+            observation: observation || undefined,
             updatedAt: new Date(),
           })
           .where(eq(invites.id, existingInvite[0].id))
@@ -81,7 +92,10 @@ export async function POST(request: NextRequest) {
           .insert(invites)
           .values({
             nameOnInvite,
+            ddi: ddi || undefined,
             phone: phone || undefined,
+            group: group || undefined,
+            observation: observation || undefined,
           })
           .returning();
         addedCount++;
@@ -89,39 +103,38 @@ export async function POST(request: NextRequest) {
 
       const inviteId = invite[0].id;
 
-      // Processar convidados
-      const guestColumns = Object.keys(row).filter(key => 
-        key.toLowerCase().includes('convidado') || 
-        key.toLowerCase().includes('guest') ||
-        key.toLowerCase().includes('nome')
-      );
-
-      // Adicionar também as colunas numeradas
-      for (let i = 1; i <= 10; i++) {
-        const possibleColumns = [`Convidado ${i}`, `Guest ${i}`, `Nome ${i}`, `convidado_${i}`];
-        possibleColumns.forEach(col => {
-          if (row[col] && !guestColumns.includes(col)) {
-            guestColumns.push(col);
-          }
-        });
-      }
-
       // Remover convidados existentes para este convite
       await db.delete(guests).where(eq(guests.inviteId, inviteId));
 
-      // Adicionar novos convidados
-      const guestNames = guestColumns
-        .map(col => String(row[col] || '').trim())
-        .filter(name => name && name !== '');
+      // Processar convidados de todas as linhas deste convite
+      const guestsToAdd = [];
+      
+      for (const row of rows) {
+        const guestName = String(row['Nome dos convidados *'] || row['Nome dos convidados'] || '').trim();
+        
+        if (!guestName) continue;
 
-      if (guestNames.length > 0) {
-        await db.insert(guests).values(
-          guestNames.map(name => ({
-            inviteId,
-            fullName: name,
-            confirmed: false,
-          }))
-        );
+        const gender = String(row['Gênero'] || '').trim();
+        const ageGroup = String(row['Faixa etária'] || '').trim();
+        const costPayment = String(row['Custo/pagamento'] || '').trim();
+        const status = String(row['Situação'] || '').trim();
+        const tableNumber = parseInt(String(row['Mesa'] || '').trim()) || undefined;
+
+        guestsToAdd.push({
+          inviteId,
+          fullName: guestName,
+          gender: gender || undefined,
+          ageGroup: ageGroup || undefined,
+          costPayment: costPayment || undefined,
+          status: status || undefined,
+          tableNumber: tableNumber,
+          confirmed: false,
+        });
+      }
+
+      // Adicionar novos convidados
+      if (guestsToAdd.length > 0) {
+        await db.insert(guests).values(guestsToAdd);
       }
     }
 

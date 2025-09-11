@@ -5,7 +5,10 @@ import { relations } from 'drizzle-orm';
 export const invites = pgTable('invites', {
   id: serial('id').primaryKey(),
   nameOnInvite: text('name_on_invite').notNull(),
-  phone: text('phone'), // opcional - usado para busca
+  ddi: text('ddi'), // código do país
+  phone: text('phone'), // telefone para confirmação
+  group: text('group'), // grupo do convite (Filhas, Amigos, etc.)
+  observation: text('observation'), // observação do convite
   code: text('code'), // opcional - identificador único
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -16,6 +19,11 @@ export const guests = pgTable('guests', {
   id: serial('id').primaryKey(),
   inviteId: integer('invite_id').notNull().references(() => invites.id, { onDelete: 'cascade' }),
   fullName: text('full_name').notNull(),
+  gender: text('gender'), // M, F
+  ageGroup: text('age_group'), // Adulto, Idoso, Criança, etc.
+  costPayment: text('cost_payment'), // Inteira, Meia, Cortesia, etc.
+  status: text('status'), // Confirmado, Pendente, Cancelado, etc.
+  tableNumber: integer('table_number'), // número da mesa
   confirmed: boolean('confirmed').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

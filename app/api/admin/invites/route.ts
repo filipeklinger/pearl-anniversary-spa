@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
       .select({
         id: invites.id,
         nameOnInvite: invites.nameOnInvite,
+        ddi: invites.ddi,
         phone: invites.phone,
+        group: invites.group,
+        observation: invites.observation,
         code: invites.code,
       })
       .from(invites);

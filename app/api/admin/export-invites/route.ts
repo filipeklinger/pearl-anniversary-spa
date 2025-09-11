@@ -33,8 +33,16 @@ export async function GET(request: NextRequest) {
       if (guestsList.length === 0) {
         exportData.push({
           'Nome do Convite': invite.nameOnInvite,
+          'DDI': invite.ddi || '',
           'Telefone': invite.phone || '',
+          'Grupo': invite.group || '',
+          'Observação': invite.observation || '',
           'Nome do Convidado': '',
+          'Gênero': '',
+          'Faixa Etária': '',
+          'Custo/Pagamento': '',
+          'Situação': '',
+          'Mesa': '',
           'Confirmado': '',
           'Data de Criação': invite.createdAt?.toISOString().split('T')[0] || '',
           'Última Atualização': invite.updatedAt?.toISOString().split('T')[0] || '',
@@ -44,8 +52,16 @@ export async function GET(request: NextRequest) {
         guestsList.forEach(guest => {
           exportData.push({
             'Nome do Convite': invite.nameOnInvite,
+            'DDI': invite.ddi || '',
             'Telefone': invite.phone || '',
+            'Grupo': invite.group || '',
+            'Observação': invite.observation || '',
             'Nome do Convidado': guest.fullName,
+            'Gênero': guest.gender || '',
+            'Faixa Etária': guest.ageGroup || '',
+            'Custo/Pagamento': guest.costPayment || '',
+            'Situação': guest.status || '',
+            'Mesa': guest.tableNumber || '',
             'Confirmado': guest.confirmed ? 'Sim' : 'Não',
             'Data de Criação': invite.createdAt?.toISOString().split('T')[0] || '',
             'Última Atualização': guest.updatedAt?.toISOString().split('T')[0] || '',
