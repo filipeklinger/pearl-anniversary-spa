@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Copy, MessageCircle, Search, ExternalLink } from "lucide-react"
+import { Copy, MessageCircle, Search, ExternalLink, ArrowLeft, Send } from "lucide-react"
+import Link from "next/link"
 
 interface Invite {
   id: number
@@ -133,13 +134,24 @@ export default function SendInvitesPage() {
     <div className="container mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ExternalLink className="h-6 w-6" />
-            Envio de Convites
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Lista de convites com links seguros para compartilhamento
-          </p>
+          <div className="flex items-center justify-between">
+            <Link href="/admin/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+            </Link>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-6 w-6" />
+                Envio de Convites
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Lista de convites com links seguros para compartilhamento
+              </p>
+            </div>
+            
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-6">
