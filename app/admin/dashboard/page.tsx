@@ -151,7 +151,7 @@ export default function AdminDashboard() {
               <CircleCheckBig className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.confirmationRate}%</div>
+              <div className="text-2xl font-bold text-blue-600">{stats?.confirmationRate?.toFixed(1)}%</div>
             </CardContent>
           </Card>
         </div>
