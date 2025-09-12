@@ -57,9 +57,11 @@ export function useAdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [isCreatingInvite, setIsCreatingInvite] = useState(false)
+  const [isUpdatingInvite, setIsUpdatingInvite] = useState(false)
   const [deletingInvite, setDeletingInvite] = useState<number | null>(null)
   const [deletingGuest, setDeletingGuest] = useState<number | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
+  const [editingInvite, setEditingInvite] = useState<Invite | null>(null)
   const [uploadFeedback, setUploadFeedback] = useState<{
     added: number
     updated: number
@@ -443,6 +445,73 @@ export function useAdminDashboard() {
     }
   }
 
+  // Update existing invite
+  const updateInvite = async (inviteId: number, inviteData: {
+    nameOnInvite: string
+    ddi?: string
+    phone?: string
+    group?: string
+    observation?: string
+    code?: string
+    guests: {
+      id?: number
+      fullName: string
+      gender?: string
+      ageGroup?: string
+      costPayment?: string
+      status?: string
+      tableNumber?: number
+      confirmed?: boolean
+    }[]
+  }) => {
+    try {
+      setIsUpdatingInvite(true)
+      
+      const response = await fetch(`/api/admin/invites/${inviteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inviteData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Refresh the invites list
+        await fetchInvites()
+        
+        // Close the form and show success
+        setShowManualForm(false)
+        setEditingInvite(null)
+        alert('✅ Convite atualizado com sucesso!')
+        
+        return { success: true, invite: data.invite }
+      } else {
+        alert(`❌ Erro ao atualizar convite: ${data.message || 'Erro desconhecido'}`)
+        return { success: false, error: data.message }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar convite:', error)
+      alert('❌ Erro ao atualizar convite. Tente novamente.')
+      return { success: false, error: 'Erro de conexão' }
+    } finally {
+      setIsUpdatingInvite(false)
+    }
+  }
+
+  // Start editing an invite
+  const startEditingInvite = (invite: Invite) => {
+    setEditingInvite(invite)
+    setShowManualForm(true)
+  }
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingInvite(null)
+    setShowManualForm(false)
+  }
+
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))
@@ -467,9 +536,11 @@ export function useAdminDashboard() {
     isLoading,
     isUploading,
     isCreatingInvite,
+    isUpdatingInvite,
     deletingInvite,
     deletingGuest,
     showManualForm,
+    editingInvite,
     uploadFeedback,
     stats,
 
@@ -487,6 +558,9 @@ export function useAdminDashboard() {
     handlePageChange,
     handleGroupFilterChange,
     fetchInvites,
-    createManualInvite
+    createManualInvite,
+    updateInvite,
+    startEditingInvite,
+    cancelEditing
   }
 }

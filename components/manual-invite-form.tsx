@@ -1,22 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Plus, X, User, Phone, Hash, Users, MessageSquare } from "lucide-react"
+import { Plus, X, User, Phone, Hash, Users, MessageSquare, Edit } from "lucide-react"
 
 interface Guest {
-  id: string
+  id: string | number
   fullName: string
   gender?: string
   ageGroup?: string
   costPayment?: string
   status?: string
   tableNumber?: number
+  confirmed?: boolean
+}
+
+interface ExistingInvite {
+  id: number
+  nameOnInvite: string
+  ddi?: string
+  phone?: string
+  group?: string
+  observation?: string
+  code?: string
+  guests: {
+    id: number
+    fullName: string
+    gender?: string
+    ageGroup?: string
+    costPayment?: string
+    status?: string
+    tableNumber?: number
+    confirmed: boolean
+  }[]
 }
 
 interface ManualInviteFormProps {
@@ -27,14 +48,23 @@ interface ManualInviteFormProps {
     group?: string
     observation?: string
     code?: string
-    guests: Omit<Guest, 'id'>[]
+    guests: (Omit<Guest, 'id'> & { id?: number })[]
   }) => Promise<{ success: boolean; error?: string }>
   isLoading: boolean
   availableGroups: string[]
   onCancel: () => void
+  editingInvite?: ExistingInvite | null
+  isEditing?: boolean
 }
 
-export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCancel }: ManualInviteFormProps) {
+export function ManualInviteForm({ 
+  onSubmit, 
+  isLoading, 
+  availableGroups, 
+  onCancel, 
+  editingInvite = null, 
+  isEditing = false 
+}: ManualInviteFormProps) {
   const [formData, setFormData] = useState({
     nameOnInvite: "",
     ddi: "",
@@ -50,6 +80,45 @@ export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCance
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
+  // Initialize form with editing data
+  useEffect(() => {
+    if (editingInvite && isEditing) {
+      setFormData({
+        nameOnInvite: editingInvite.nameOnInvite || "",
+        ddi: editingInvite.ddi || "",
+        phone: editingInvite.phone || "",
+        group: editingInvite.group || "",
+        observation: editingInvite.observation || "",
+        code: editingInvite.code || ""
+      })
+
+      if (editingInvite.guests && editingInvite.guests.length > 0) {
+        setGuests(editingInvite.guests.map(guest => ({
+          id: guest.id,
+          fullName: guest.fullName,
+          gender: guest.gender,
+          ageGroup: guest.ageGroup,
+          costPayment: guest.costPayment,
+          status: guest.status,
+          tableNumber: guest.tableNumber,
+          confirmed: guest.confirmed
+        })))
+      }
+    } else {
+      // Reset form for new invite
+      setFormData({
+        nameOnInvite: "",
+        ddi: "",
+        phone: "",
+        group: "",
+        observation: "",
+        code: ""
+      })
+      setGuests([{ id: "1", fullName: "" }])
+    }
+    setErrors({})
+  }, [editingInvite, isEditing])
+
   // Add new guest
   const addGuest = () => {
     const newGuest: Guest = {
@@ -60,14 +129,14 @@ export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCance
   }
 
   // Remove guest
-  const removeGuest = (guestId: string) => {
+  const removeGuest = (guestId: string | number) => {
     if (guests.length > 1) {
       setGuests(guests.filter(g => g.id !== guestId))
     }
   }
 
   // Update guest data
-  const updateGuest = (guestId: string, field: keyof Guest, value: string | number) => {
+  const updateGuest = (guestId: string | number, field: keyof Guest, value: string | number | boolean) => {
     setGuests(guests.map(guest => 
       guest.id === guestId ? { ...guest, [field]: value } : guest
     ))
@@ -106,9 +175,15 @@ export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCance
 
     const validGuests = guests
       .filter(g => g.fullName.trim())
-      .map(({ id, ...guest }) => ({
-        ...guest,
-        tableNumber: guest.tableNumber || undefined
+      .map(guest => ({
+        id: typeof guest.id === 'number' ? guest.id : undefined,
+        fullName: guest.fullName,
+        gender: guest.gender,
+        ageGroup: guest.ageGroup,
+        costPayment: guest.costPayment,
+        status: guest.status,
+        tableNumber: guest.tableNumber || undefined,
+        confirmed: guest.confirmed || false
       }))
 
     const submitData = {
@@ -143,8 +218,8 @@ export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCance
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Cadastro Manual de Convite
+            {isEditing ? <Edit className="h-5 w-5" /> : <User className="h-5 w-5" />}
+            {isEditing ? "Editar Convite" : "Cadastro Manual de Convite"}
           </span>
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <X className="h-4 w-4" />
@@ -346,7 +421,10 @@ export function ManualInviteForm({ onSubmit, isLoading, availableGroups, onCance
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Salvando..." : "Salvar Convite"}
+              {isLoading 
+                ? (isEditing ? "Atualizando..." : "Salvando...") 
+                : (isEditing ? "Atualizar Convite" : "Salvar Convite")
+              }
             </Button>
           </div>
         </form>

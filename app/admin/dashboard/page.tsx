@@ -20,7 +20,8 @@ import {
   Circle,
   CircleCheckBig,
   Trash2,
-  UserX
+  UserX,
+  Edit
 } from "lucide-react"
 import Link from "next/link"
 import { useAdminDashboard } from "@/hooks/useAdminDashboard"
@@ -38,9 +39,11 @@ export default function AdminDashboard() {
     isLoading,
     isUploading,
     isCreatingInvite,
+    isUpdatingInvite,
     deletingInvite,
     deletingGuest,
     showManualForm,
+    editingInvite,
     uploadFeedback,
     stats,
     setSearchTerm,
@@ -53,7 +56,10 @@ export default function AdminDashboard() {
     handleDeleteGuest,
     handlePageChange,
     handleGroupFilterChange,
-    createManualInvite
+    createManualInvite,
+    updateInvite,
+    startEditingInvite,
+    cancelEditing
   } = useAdminDashboard()
 
   if (status === "loading" || isLoading) {
@@ -187,7 +193,13 @@ export default function AdminDashboard() {
               </Button>
 
               <Button 
-                onClick={() => setShowManualForm(!showManualForm)} 
+                onClick={() => {
+                  if (showManualForm && editingInvite) {
+                    cancelEditing()
+                  } else {
+                    setShowManualForm(!showManualForm)
+                  }
+                }} 
                 variant="outline"
               >
                 {showManualForm ? "Cancelar" : "Cadastro Manual"}
@@ -200,10 +212,15 @@ export default function AdminDashboard() {
         {showManualForm && (
           <div className="mb-8">
             <ManualInviteForm
-              onSubmit={createManualInvite}
-              isLoading={isCreatingInvite}
+              onSubmit={editingInvite ? 
+                (data) => updateInvite(editingInvite.id, data) : 
+                createManualInvite
+              }
+              isLoading={editingInvite ? isUpdatingInvite : isCreatingInvite}
               availableGroups={availableGroups}
-              onCancel={() => setShowManualForm(false)}
+              onCancel={editingInvite ? cancelEditing : () => setShowManualForm(false)}
+              editingInvite={editingInvite}
+              isEditing={!!editingInvite}
             />
           </div>
         )}
@@ -287,19 +304,32 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteInvite(invite.id, invite.nameOnInvite)}
-                      disabled={deletingInvite === invite.id}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      {deletingInvite === invite.id ? (
-                        <div className="animate-spin h-4 w-4 border border-red-500 border-t-transparent rounded-full" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditingInvite(invite)}
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        title="Editar convite"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteInvite(invite.id, invite.nameOnInvite)}
+                        disabled={deletingInvite === invite.id}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Deletar convite"
+                      >
+                        {deletingInvite === invite.id ? (
+                          <div className="animate-spin h-4 w-4 border border-red-500 border-t-transparent rounded-full" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   {invite.guests.length > 0 && (
