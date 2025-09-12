@@ -56,6 +56,7 @@ export function useAdminDashboard() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false)
   const [deletingInvite, setDeletingInvite] = useState<number | null>(null)
   const [deletingGuest, setDeletingGuest] = useState<number | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
@@ -390,6 +391,58 @@ export function useAdminDashboard() {
     }
   }
 
+  // Create manual invite
+  const createManualInvite = async (inviteData: {
+    nameOnInvite: string
+    ddi?: string
+    phone?: string
+    group?: string
+    observation?: string
+    code?: string
+    guests: {
+      fullName: string
+      gender?: string
+      ageGroup?: string
+      costPayment?: string
+      status?: string
+      tableNumber?: number
+    }[]
+  }) => {
+    try {
+      setIsCreatingInvite(true)
+      
+      const response = await fetch('/api/admin/create-invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inviteData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Refresh the invites list
+        await fetchInvites()
+        
+        // Close the form and show success
+        setShowManualForm(false)
+        alert('✅ Convite criado com sucesso!')
+        
+        return { success: true, invite: data.invite }
+      } else {
+        alert(`❌ Erro ao criar convite: ${data.message || 'Erro desconhecido'}`)
+        return { success: false, error: data.message }
+      }
+    } catch (error) {
+      console.error('Erro ao criar convite:', error)
+      alert('❌ Erro ao criar convite. Tente novamente.')
+      return { success: false, error: 'Erro de conexão' }
+    } finally {
+      setIsCreatingInvite(false)
+    }
+  }
+
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))
@@ -413,6 +466,7 @@ export function useAdminDashboard() {
     pagination,
     isLoading,
     isUploading,
+    isCreatingInvite,
     deletingInvite,
     deletingGuest,
     showManualForm,
@@ -432,6 +486,7 @@ export function useAdminDashboard() {
     handleDeleteGuest,
     handlePageChange,
     handleGroupFilterChange,
-    fetchInvites
+    fetchInvites,
+    createManualInvite
   }
 }

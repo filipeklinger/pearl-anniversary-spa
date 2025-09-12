@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ManualInviteForm } from "@/components/manual-invite-form"
 import { 
   Heart, 
   Users, 
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
     pagination,
     isLoading,
     isUploading,
+    isCreatingInvite,
     deletingInvite,
     deletingGuest,
     showManualForm,
@@ -50,7 +52,8 @@ export default function AdminDashboard() {
     handleDeleteInvite,
     handleDeleteGuest,
     handlePageChange,
-    handleGroupFilterChange
+    handleGroupFilterChange,
+    createManualInvite
   } = useAdminDashboard()
 
   if (status === "loading" || isLoading) {
@@ -195,16 +198,14 @@ export default function AdminDashboard() {
 
         {/* Manual Form */}
         {showManualForm && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Cadastro Manual de Convite</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Formulário de cadastro manual será implementado em breve.
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-8">
+            <ManualInviteForm
+              onSubmit={createManualInvite}
+              isLoading={isCreatingInvite}
+              availableGroups={availableGroups}
+              onCancel={() => setShowManualForm(false)}
+            />
+          </div>
         )}
 
         {/* Filters and Search */}
