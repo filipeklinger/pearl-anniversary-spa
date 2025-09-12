@@ -43,12 +43,16 @@ export default function RSVPForm() {
     setSelectedInvite(null)
 
     try {
+      //testar apenas se existe numeros no texto
+      const isPhoneSearch = /\d/.test(searchTerm.trim());
+      const cleanedSearch = isPhoneSearch ? searchTerm.trim().replace(/[\s()-]/g, '') : searchTerm.trim();
+
       const response = await fetch('/api/search-invite', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ searchTerm: searchTerm.trim() }),
+        body: JSON.stringify({ searchTerm: cleanedSearch }),
       })
 
       if (response.ok) {
