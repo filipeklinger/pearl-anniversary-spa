@@ -36,6 +36,12 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState("")
   const [thankYouMessage, setThankYouMessage] = useState("")
+  const [confirmationDeadline, setConfirmationDeadline] = useState<string | null>(null)
+
+  // Carregar configurações públicas
+  useEffect(() => {
+    fetchPublicSettings()
+  }, [])
 
   // Carregar convite automaticamente se um token for fornecido
   useEffect(() => {
@@ -43,6 +49,36 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
       loadInviteByToken(inviteToken)
     }
   }, [inviteToken])
+
+  const fetchPublicSettings = async () => {
+    try {
+      const response = await fetch('/api/public-settings')
+      if (response.ok) {
+        const data = await response.json()
+        setConfirmationDeadline(data.confirmationDeadline)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configurações:', error)
+    }
+  }
+
+  // Verificar se a data limite foi ultrapassada
+  const isDeadlinePassed = () => {
+    if (!confirmationDeadline) return false
+    return new Date() > new Date(confirmationDeadline)
+  }
+
+  // Formatar data limite para exibição
+  const formatDeadline = () => {
+    if (!confirmationDeadline) return null
+    return new Date(confirmationDeadline).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
   const loadInviteByToken = async (token: string) => {
     setIsSearching(true)
@@ -227,16 +263,54 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
           <p className="text-lg text-slate-600">
             Sua presença é muito importante para nós. Por favor, confirme sua participação.
           </p>
+          {confirmationDeadline ? (
+            <div className="mt-4">
+              {isDeadlinePassed() ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-700 font-semibold">
+                    ⚠️ Prazo para confirmações encerrado
+                  </p>
+                  <p className="text-red-600 text-sm">
+                    O prazo para confirmações encerrou em <strong>{formatDeadline()}</strong>
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-blue-700">
+                    Confirme até <strong>{formatDeadline()}</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-4 text-slate-500">
+              Confirme sua presença o quanto antes!
+            </p>
+          )}
         </div>
 
         <Card className="bg-card border-border shadow-lg">
           <CardHeader>
             <CardTitle className="font-serif text-2xl text-slate-800 text-center">
-              {!selectedInvite ? "Nao foi possivel encontrar seu Convite" : "Selecione os Convidados"}
+              {!selectedInvite ? "Nao foi possivel encontrar seu Convite" : 
+               isDeadlinePassed() ? "Prazo Encerrado" : "Selecione os Convidados"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {!selectedInvite ? (
+            {isDeadlinePassed() ? (
+              <div className="text-center p-6">
+                <XCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                <p className="text-red-700 text-lg font-semibold mb-2">
+                  Confirmações Encerradas
+                </p>
+                <p className="text-red-600">
+                  O prazo para confirmação de presença encerrou em <strong>{formatDeadline()}</strong>.
+                </p>
+                <p className="text-red-600 mt-2">
+                  Entre em contato com os organizadores se necessário.
+                </p>
+              </div>
+            ) : !selectedInvite ? (
               <div className="space-y-6">
                 {/* Mostrar busca apenas se não houver token */}
                 {!inviteToken && (
