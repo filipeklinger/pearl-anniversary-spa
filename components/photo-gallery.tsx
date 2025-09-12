@@ -203,9 +203,9 @@ export default function PhotoGallery() {
               <img
                 src={selectedPhoto.src || "/placeholder.svg"}
                 alt={selectedPhoto.alt}
-                className="max-w-full max-h-[70vh] object-contain mx-auto"
+                className="max-w-full max-h-[80vh] object-contain mx-auto"
               />
-              {selectedPhoto.caption && <p className="text-white mt-4 text-lg font-light">{selectedPhoto.caption}</p>}
+              {/* {selectedPhoto.caption && <p className="text-white mt-4 text-lg font-light">{selectedPhoto.caption}</p>} */}
               <p className="text-white/70 text-sm mt-2">
                 {currentIndex + 1} de {photos.length}
               </p>
