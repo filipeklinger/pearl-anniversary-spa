@@ -216,12 +216,12 @@ export default function AdminDashboard() {
               <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-y-0 md:space-x-4">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 h-4 w-4" />
                   <Input
                     placeholder="Buscar convites ou convidados..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 min-w-[250px]"
+                    className="pl-10 min-w-[250px] border-border"
                   />
                 </div>
 
