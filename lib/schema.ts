@@ -10,6 +10,7 @@ export const invites = pgTable('invites', {
   group: text('group'), // grupo do convite (Filhas, Amigos, etc.)
   observation: text('observation'), // observação do convite
   code: text('code'), // opcional - identificador único
+  token: text('token').unique(), // token único para acesso seguro ao convite
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

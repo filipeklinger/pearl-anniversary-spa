@@ -6,8 +6,19 @@ import { Card, CardContent } from "@/components/ui/card"
 import RSVPForm from "@/components/rsvp-form-new"
 import PhotoGallery from "@/components/photo-gallery"
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 export default function HomePage() {
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const token = searchParams.get('invite')
+    if (token) {
+      setInviteToken(token)
+    }
+  }, [searchParams])
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -143,7 +154,7 @@ export default function HomePage() {
           <h2 className="font-serif text-4xl md:text-5xl font-bold text-slate-800 mb-8">Confirme sua Presença</h2>
           <div className="w-24 h-1 bg-primary mx-auto mb-12"></div>
 
-          <RSVPForm />
+          <RSVPForm inviteToken={inviteToken} />
         </div>
       </section>
 

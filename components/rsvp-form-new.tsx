@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,7 +22,11 @@ interface Invite {
   guests: Guest[]
 }
 
-export default function RSVPForm() {
+interface RSVPFormProps {
+  inviteToken?: string | null
+}
+
+export default function RSVPForm({ inviteToken }: RSVPFormProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [foundInvites, setFoundInvites] = useState<Invite[]>([])
@@ -32,6 +36,39 @@ export default function RSVPForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState("")
   const [thankYouMessage, setThankYouMessage] = useState("")
+
+  // Carregar convite automaticamente se um token for fornecido
+  useEffect(() => {
+    if (inviteToken) {
+      loadInviteByToken(inviteToken)
+    }
+  }, [inviteToken])
+
+  const loadInviteByToken = async (token: string) => {
+    setIsSearching(true)
+    setError("")
+    
+    try {
+      const response = await fetch(`/api/invite-by-token?token=${encodeURIComponent(token)}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSelectedInvite(data.invite)
+        // Pré-seleciona convidados já confirmados
+        const confirmedIds = data.invite.guests
+          .filter((guest: Guest) => guest.confirmed)
+          .map((guest: Guest) => guest.id)
+        setSelectedGuests(confirmedIds)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Convite não encontrado')
+      }
+    } catch (error) {
+      setError('Erro ao carregar convite. Tente novamente.')
+    } finally {
+      setIsSearching(false)
+    }
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -187,9 +224,6 @@ export default function RSVPForm() {
       <div className="max-w-2xl mx-auto px-4">
         <div className="text-center mb-12">
           <Heart className="w-12 h-12 text-primary mx-auto mb-6" />
-          <h2 className="font-serif text-4xl font-bold text-slate-800 mb-4">
-            Confirme sua Presença
-          </h2>
           <p className="text-lg text-slate-600">
             Sua presença é muito importante para nós. Por favor, confirme sua participação.
           </p>
@@ -198,39 +232,24 @@ export default function RSVPForm() {
         <Card className="bg-card border-border shadow-lg">
           <CardHeader>
             <CardTitle className="font-serif text-2xl text-slate-800 text-center">
-              {!selectedInvite ? "Encontre seu Convite" : "Selecione os Convidados"}
+              {!selectedInvite ? "Nao foi possivel encontrar seu Convite" : "Selecione os Convidados"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!selectedInvite ? (
               <div className="space-y-6">
-                <form onSubmit={handleSearch} className="space-y-4">
-                  <div>
-                    <Label htmlFor="search" className="text-slate-800 font-medium">
-                      Nome no convite ou telefone
-                    </Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="search"
-                        type="text"
-                        placeholder="Ex: Família Silva, João, (11) 99999-9999"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-input border-border"
-                        required
-                      />
-                    </div>
-                  </div>
+                {/* Mostrar busca apenas se não houver token */}
+                {!inviteToken && (
+                  <p>Seu Link esta quebrado! O campo de confirmação não esta ativo. Entre em contato com o organizador do evento para que lhe envie um novo.</p>
+                )}
 
-                  <Button 
-                    type="submit" 
-                    disabled={isSearching || !searchTerm.trim()}
-                    className="w-full bg-primary text-white hover:bg-primary/90"
-                  >
-                    {isSearching ? "Buscando..." : "Buscar Convite"}
-                  </Button>
-                </form>
+                {/* Mensagem de carregamento quando tem token */}
+                {inviteToken && isSearching && (
+                  <div className="text-center p-6">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-slate-600">Carregando seu convite...</p>
+                  </div>
+                )}
 
                 {error && (
                   <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -298,13 +317,13 @@ export default function RSVPForm() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button 
+                  {/* <Button 
                     variant="outline"
                     onClick={() => setSelectedInvite(null)}
                     className="flex-1 bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
                   >
                     Voltar
-                  </Button>
+                  </Button> */}
                   <Button 
                     onClick={handleConfirm}
                     disabled={isSubmitting}
