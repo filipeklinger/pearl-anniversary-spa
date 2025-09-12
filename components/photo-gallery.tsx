@@ -173,7 +173,7 @@ export default function PhotoGallery() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute -top-12 right-0 text-white hover:text-white hover:bg-white/20"
+              className="absolute -top-12 right-0 text-white border-1 border-amber-50/20 hover:text-white hover:bg-white/20"
               onClick={closeLightbox}
             >
               <X className="w-6 h-6" />
@@ -183,7 +183,7 @@ export default function PhotoGallery() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-white hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white border-1 border-amber-100 hover:text-white hover:bg-white/20"
               onClick={prevPhoto}
             >
               <ChevronLeft className="w-8 h-8" />
@@ -192,7 +192,7 @@ export default function PhotoGallery() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-white hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white border-1 border-amber-100 hover:text-white hover:bg-white/20"
               onClick={nextPhoto}
             >
               <ChevronRight className="w-8 h-8" />
