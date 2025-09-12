@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
           ilike(invites.phone, `%${term}%`)
         )
       )
-      .limit(5); // Limitar a 5 resultados para não sobrecarregar
+      .limit(1); // Limitar a 1 resultado
 
     if (foundInvites.length === 0) {
       return NextResponse.json(

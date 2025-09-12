@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
       
       const ddi = String(inviteDataRow['DDI'] || '').trim();
       const phone = String(inviteDataRow['DDD + Telefone para confirmação de presença'] || '').trim();
+      //remover traços e parênteses do telefone
+      const cleanedPhone = phone?.replace(/[\s()-]/g, '');
       const group = String(inviteDataRow['Grupo do convite'] || '').trim();
       const observation = String(inviteDataRow['Observação do convite'] || '').trim();
 
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
           .update(invites)
           .set({
             ddi: ddi || undefined,
-            phone: phone || undefined,
+            phone: cleanedPhone || undefined,
             group: group || undefined,
             observation: observation || undefined,
             updatedAt: new Date(),

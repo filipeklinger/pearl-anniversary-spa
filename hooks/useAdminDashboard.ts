@@ -174,33 +174,100 @@ export function useAdminDashboard() {
     setUploadFeedback(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data, { 
+        type: 'array',
+        codepage: 65001, // UTF-8
+        cellText: false,
+        cellDates: true
+      })
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+      
+      // Converter a planilha em dados brutos primeiro para identificar o cabeçalho correto
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1, // Usar números como índices ao invés de nomes de colunas
+        raw: false,
+        defval: '',
+        blankrows: true
+      }) as any[][]
+
+      console.log('Dados brutos recebidos:', rawData.slice(0, 5)) // Debug das primeiras 5 linhas
+
+      // Encontrar a linha do cabeçalho (procurar pela linha que contém "Nome do convite")
+      let headerRowIndex = -1
+      for (let i = 0; i < Math.min(rawData.length, 5); i++) {
+        const row = rawData[i]
+        if (row && Array.isArray(row) && row.some(cell => 
+          String(cell || '').toLowerCase().includes('nome do convite')
+        )) {
+          headerRowIndex = i
+          break
+        }
+      }
+
+      if (headerRowIndex === -1) {
+        throw new Error('Cabeçalho não encontrado. Verifique se a planilha contém a linha com "Nome do convite *"')
+      }
+
+      console.log(`Cabeçalho encontrado na linha ${headerRowIndex + 1}`)
+
+      // Extrair o cabeçalho
+      const headerRow = rawData[headerRowIndex]
+      
+      // Extrair apenas as linhas de dados (após o cabeçalho)
+      const dataRows = rawData.slice(headerRowIndex + 1).filter(row => 
+        row && Array.isArray(row) && row.some(cell => String(cell || '').trim() !== '')
+      )
+
+      // Converter para formato de objetos usando o cabeçalho correto
+      const jsonData = dataRows.map(row => {
+        const obj: any = {}
+        headerRow.forEach((header, index) => {
+          if (header && String(header).trim()) {
+            obj[String(header)] = row[index] || ''
+          }
+        })
+        return obj
+      })
+
+      console.log('Dados processados:', jsonData.slice(0, 3)) // Debug dos primeiros 3 registros
 
       const response = await fetch('/api/admin/upload-invites', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data: jsonData }),
       })
 
       if (response.ok) {
         const result = await response.json()
-        setUploadFeedback(result)
+        setUploadFeedback({
+          added: result.added || 0,
+          updated: result.updated || 0
+        })
         fetchInvites()
         
-        // Clear the input
-        event.target.value = ''
-        
-        setTimeout(() => setUploadFeedback(null), 5000)
+        // Mostrar feedback detalhado
+        const totalProcessed = (result.added || 0) + (result.updated || 0)
+        alert(`Planilha importada com sucesso!\n\n` +
+              `📊 Resumo:\n` +
+              `• ${result.added || 0} novos convites adicionados\n` +
+              `• ${result.updated || 0} convites atualizados\n` +
+              `• ${totalProcessed} total processados`)
       } else {
-        const error = await response.json()
-        alert(`Erro no upload: ${error.message}`)
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Erro ao importar planilha: ${errorData.message || 'Erro desconhecido'}`)
       }
     } catch (error) {
       console.error('Erro no upload:', error)
-      alert('Erro no upload do arquivo')
+      alert('Erro ao processar arquivo. Verifique se o formato está correto.')
     } finally {
       setIsUploading(false)
     }
+
+    // Reset do input
+    event.target.value = ''
   }
 
   // Export data to Excel
