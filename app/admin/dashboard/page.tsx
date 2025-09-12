@@ -81,26 +81,26 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div>
-                <h1 className="text-muted-foreground text-sm">Bodas de Pérola</h1>
-                <p className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/settings">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurações
-                </Button>
-              </Link>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
-            </div>
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="flex items-start md:items-center space-x-4">
+          <div>
+            <h1 className="text-muted-foreground text-sm">Bodas de Pérola</h1>
+            <p className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-row space-y-2 gap-1 justify-between md:justify-normal md:items-center md:space-y-0 md:space-x-4">
+          <Link href="/admin/settings">
+            <Button variant="secondary" size="sm">
+          <Settings className="h-4 w-4 mr-2" />
+          Configurações
+            </Button>
+          </Link>
+          <Button onClick={handleSignOut} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
+        </div>
           </div>
         </div>
       </header>
@@ -274,21 +274,21 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               {filteredInvites.map((invite) => (
                 <div key={invite.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col md:flex-row items-start justify-between flex-wrap md:flex-col">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-lg">{invite.nameOnInvite}</h3>
-                        {invite.group && (
-                          <Badge variant="secondary" className="text-xs">
-                            {invite.group}
-                          </Badge>
-                        )}
-                        <Badge variant={invite.confirmedCount > 0 ? "default" : "outline"}>
-                          {invite.confirmedCount}/{invite.totalGuests} confirmados
+                      <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-3 mb-2">
+                      <h3 className="font-semibold text-lg">{invite.nameOnInvite}</h3>
+                      {invite.group && (
+                        <Badge variant="secondary" className="text-xs">
+                        {invite.group}
                         </Badge>
+                      )}
+                      <Badge variant={invite.confirmedCount > 0 ? "default" : "outline"}>
+                        {invite.confirmedCount}/{invite.totalGuests} confirmados
+                      </Badge>
                       </div>
                       
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+                      <div className="flex flex-col md:flex-row flex-wrap gap-4 text-sm text-gray-600 mb-3">
                         {invite.phone && (
                           <span>📱 {invite.ddi ? `+${invite.ddi} ` : ''}{invite.phone}</span>
                         )}
