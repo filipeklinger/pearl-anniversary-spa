@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ManualInviteForm } from "@/components/manual-invite-form"
+import { Modal } from "@/components/ui/modal"
+import { ManualInviteForm } from "@/components/manual-invite-form-modal"
 import { 
   Heart, 
   Users, 
@@ -193,37 +194,14 @@ export default function AdminDashboard() {
               </Button>
 
               <Button 
-                onClick={() => {
-                  if (showManualForm && editingInvite) {
-                    cancelEditing()
-                  } else {
-                    setShowManualForm(!showManualForm)
-                  }
-                }} 
+                onClick={() => setShowManualForm(true)} 
                 variant="outline"
               >
-                {showManualForm ? "Cancelar" : "Cadastro Manual"}
+                Cadastro Manual
               </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Manual Form */}
-        {showManualForm && (
-          <div className="mb-8">
-            <ManualInviteForm
-              onSubmit={editingInvite ? 
-                (data) => updateInvite(editingInvite.id, data) : 
-                createManualInvite
-              }
-              isLoading={editingInvite ? isUpdatingInvite : isCreatingInvite}
-              availableGroups={availableGroups}
-              onCancel={editingInvite ? cancelEditing : () => setShowManualForm(false)}
-              editingInvite={editingInvite}
-              isEditing={!!editingInvite}
-            />
-          </div>
-        )}
 
         {/* Filters and Search */}
         <Card>
@@ -457,6 +435,26 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Modal para Formulário */}
+      <Modal
+        isOpen={showManualForm}
+        onClose={editingInvite ? cancelEditing : () => setShowManualForm(false)}
+        title={editingInvite ? "Editar Convite" : "Cadastro Manual de Convite"}
+        size="xl"
+      >
+        <ManualInviteForm
+          onSubmit={editingInvite ? 
+            (data) => updateInvite(editingInvite.id, data) : 
+            createManualInvite
+          }
+          isLoading={editingInvite ? isUpdatingInvite : isCreatingInvite}
+          availableGroups={availableGroups}
+          onCancel={editingInvite ? cancelEditing : () => setShowManualForm(false)}
+          editingInvite={editingInvite}
+          isEditing={!!editingInvite}
+        />
+      </Modal>
     </div>
   )
 }
