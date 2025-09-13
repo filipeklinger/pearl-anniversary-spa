@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import RSVPForm from "@/components/rsvp-form-new"
 import PhotoGallery from "@/components/photo-gallery"
+import AudioPlayer from "@/components/audio-player"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
@@ -340,6 +341,9 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Audio Player */}
+      <AudioPlayer />
     </div>
   )
 }
