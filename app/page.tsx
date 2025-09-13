@@ -177,7 +177,7 @@ export default function HomePage() {
                         <MapPin className="w-8 h-8 text-primary" />
                       </div>
                       <h3 className="font-serif text-2xl font-bold text-slate-800 mb-2">Sítio Alto da Boa Vista</h3>
-                      <p className="text-slate-600">Um espaço elegante para nossa celebração especial</p>
+                      {/* <p className="text-slate-600">Um espaço elegante para nossa celebração especial</p> */}
                     </div>
 
                     <div className="space-y-4">
