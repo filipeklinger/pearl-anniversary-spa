@@ -5,7 +5,7 @@ import { eq, inArray } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    const { guestIds } = await request.json();
+    const { guestIds, message } = await request.json();
     
     if (!guestIds || !Array.isArray(guestIds)) {
       return NextResponse.json(
@@ -26,23 +26,25 @@ export async function POST(request: NextRequest) {
       if (firstGuest.length > 0) {
         const inviteId = firstGuest[0].inviteId;
         
-        // Resetar todas as confirmações para este convite
+        // Resetar todas as confirmações e mensagens para este convite
         await db
           .update(guests)
           .set({ 
             confirmed: false,
+            message: null,
             updatedAt: new Date()
           })
           .where(eq(guests.inviteId, inviteId));
       }
     }
 
-    // Confirmar apenas os convidados selecionados
+    // Confirmar apenas os convidados selecionados e adicionar a mensagem
     if (guestIds.length > 0) {
       await db
         .update(guests)
         .set({ 
           confirmed: true,
+          message: message || null,
           updatedAt: new Date()
         })
         .where(inArray(guests.id, guestIds));

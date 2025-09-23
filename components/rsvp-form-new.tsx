@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import { Heart, Users, Search, CheckCircle, XCircle } from "lucide-react"
 
 interface Guest {
@@ -32,6 +33,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
   const [foundInvites, setFoundInvites] = useState<Invite[]>([])
   const [selectedInvite, setSelectedInvite] = useState<Invite | null>(null)
   const [selectedGuests, setSelectedGuests] = useState<number[]>([])
+  const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState("")
@@ -181,7 +183,10 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ guestIds: selectedGuests }),
+        body: JSON.stringify({ 
+          guestIds: selectedGuests,
+          message: message.trim() || null
+        }),
       })
 
       if (response.ok) {
@@ -213,6 +218,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
     setFoundInvites([])
     setSelectedInvite(null)
     setSelectedGuests([])
+    setMessage("")
     setIsSubmitted(false)
     setError("")
   }
@@ -388,6 +394,26 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                       )}
                     </div>
                   ))}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-slate-800 font-medium">
+                    Deixe uma mensagem para os anfitriões (opcional)
+                  </Label>
+                  <Textarea
+                    id="message"
+                    placeholder="Escreva aqui uma mensagem carinhosa para Robson & Roseli..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    maxLength={500}
+                    className="resize-none"
+                    rows={3}
+                  />
+                  {message.length > 0 && (
+                    <p className="text-xs text-slate-500 text-right">
+                      {message.length}/500 caracteres
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-3">

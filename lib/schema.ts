@@ -26,6 +26,7 @@ export const guests = pgTable('guests', {
   status: text('status'), // Confirmado, Pendente, Cancelado, etc.
   tableNumber: integer('table_number'), // número da mesa
   confirmed: boolean('confirmed').default(false),
+  message: text('message'), // mensagem do convidado para o anfitrião
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

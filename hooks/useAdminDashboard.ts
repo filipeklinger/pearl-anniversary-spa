@@ -25,6 +25,7 @@ interface Guest {
   status?: string
   tableNumber?: number
   confirmed: boolean
+  message?: string | null
   inviteId: number
 }
 
@@ -292,6 +293,7 @@ export function useAdminDashboard() {
             "Situação": "",
             "Mesa": number,
             "Confirmado": "Não" | "Sim",
+            "Mensagem": string,
             "Data de Criação": Date,
             "Última Atualização": Date
         }[]

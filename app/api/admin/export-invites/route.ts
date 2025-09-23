@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
           'Situação': '',
           'Mesa': '',
           'Confirmado': '',
+          'Mensagem': '',
           'Data de Criação': invite.createdAt?.toISOString().split('T')[0] || '',
           'Última Atualização': invite.updatedAt?.toISOString().split('T')[0] || '',
         });
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
             'Situação': guest.status || '',
             'Mesa': guest.tableNumber || '',
             'Confirmado': guest.confirmed ? 'Sim' : 'Não',
+            'Mensagem': guest.message || '',
             'Data de Criação': invite.createdAt?.toISOString().split('T')[0] || '',
             'Última Atualização': guest.updatedAt?.toISOString().split('T')[0] || '',
           });
