@@ -61,7 +61,16 @@ export async function GET(request: NextRequest) {
     
     const totalInvites = allInvites.length;
     const totalGuests = allGuests.length;
-    const confirmedGuests = allGuests.filter(guest => guest.confirmed).length;
+    
+    // Priority: confirmed field first (for backward compatibility), then status field
+    const confirmedGuests = allGuests.filter(guest => {
+      // If confirmed is true, count as confirmed (backward compatibility)
+      if (guest.confirmed === true) return true;
+      // If confirmed is false/null but status is Confirmado, count as confirmed
+      if (!guest.confirmed && guest.status === 'Confirmado') return true;
+      return false;
+    }).length;
+    
     const cancelledGuests = allGuests.filter(guest => guest.status === 'Cancelado').length;
     const confirmationRate = totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0;
 

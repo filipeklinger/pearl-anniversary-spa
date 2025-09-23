@@ -65,37 +65,76 @@ export default function AdminDashboard() {
     cancelEditing
   } = useAdminDashboard()
 
-  // Função para determinar o ícone e cor do status do convidado
+  // Function to get status icon for a guest
+  // Priority: confirmed field first (for backward compatibility), then status field
   const getGuestStatusIcon = (guest: any) => {
-    if (guest.status === 'Confirmado' && guest.confirmed) {
-      return {
-        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-        textColor: 'text-green-700',
-        bgColor: 'hover:bg-green-50',
-        title: 'Confirmado - Irá comparecer'
+    // If confirmed is true, always show green checkmark (backward compatibility)
+    if (guest.confirmed === true) {
+      return <CheckCircle className="h-4 w-4 text-green-600" />
+    }
+    
+    // If confirmed is false and we have a new status field, use it
+    if (guest.status && guest.status !== 'Pendente') {
+      switch (guest.status) {
+        case 'Confirmado':
+          return <CheckCircle className="h-4 w-4 text-green-600" />
+        case 'Cancelado':
+          return <XCircle className="h-4 w-4 text-red-600" />
+        default:
+          return <Ban className="h-4 w-4 text-gray-400" />
       }
-    } else if (guest.status === 'Cancelado' && !guest.confirmed) {
+    }
+    
+    // Default: pending status
+    return <Clock className="h-4 w-4 text-yellow-600" />
+  }
+
+  // Function to get complete status info for a guest
+  // Priority: confirmed field first (for backward compatibility), then status field
+  const getGuestStatusInfo = (guest: any) => {
+    // If confirmed is true, always treat as confirmed (backward compatibility)
+    if (guest.confirmed === true) {
       return {
-        icon: <XCircle className="h-5 w-5 text-red-500" />,
-        textColor: 'text-red-700',
-        bgColor: 'hover:bg-red-50',
-        title: 'Cancelado - Não irá comparecer'
+        icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+        title: 'Confirmado',
+        bgColor: 'bg-green-50 hover:bg-green-100',
+        textColor: 'text-green-800'
       }
-    } else if (guest.status === 'Pendente' || !guest.status) {
-      return {
-        icon: <Clock className="h-5 w-5 text-yellow-500" />,
-        textColor: 'text-yellow-700',
-        bgColor: 'hover:bg-yellow-50',
-        title: 'Pendente - Aguardando confirmação'
+    }
+    
+    // If confirmed is false and we have a new status field, use it
+    if (guest.status && guest.status !== 'Pendente') {
+      switch (guest.status) {
+        case 'Confirmado':
+          return {
+            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+            title: 'Confirmado',
+            bgColor: 'bg-green-50 hover:bg-green-100',
+            textColor: 'text-green-800'
+          }
+        case 'Cancelado':
+          return {
+            icon: <XCircle className="h-4 w-4 text-red-600" />,
+            title: 'Cancelado',
+            bgColor: 'bg-red-50 hover:bg-red-100',
+            textColor: 'text-red-800'
+          }
+        default:
+          return {
+            icon: <Ban className="h-4 w-4 text-gray-400" />,
+            title: 'Não Respondido',
+            bgColor: 'bg-gray-50 hover:bg-gray-100',
+            textColor: 'text-gray-600'
+          }
       }
-    } else {
-      // Estado inconsistente - mostrar como erro
-      return {
-        icon: <Ban className="h-5 w-5 text-gray-500" />,
-        textColor: 'text-gray-700',
-        bgColor: 'hover:bg-gray-50',
-        title: 'Status inconsistente'
-      }
+    }
+    
+    // Default: pending status
+    return {
+      icon: <Clock className="h-4 w-4 text-yellow-600" />,
+      title: 'Pendente',
+      bgColor: 'bg-yellow-50 hover:bg-yellow-100',
+      textColor: 'text-yellow-800'
     }
   }
 
@@ -366,7 +405,7 @@ export default function AdminDashboard() {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="grid gap-2">
                         {invite.guests.map((guest) => {
-                          const statusInfo = getGuestStatusIcon(guest)
+                          const statusInfo = getGuestStatusInfo(guest)
                           return (
                             <div key={guest.id} className={`group flex items-center justify-between py-2 px-3 rounded-lg ${statusInfo.bgColor} transition-colors`}>
                               <div className="flex items-center space-x-3 flex-1" title={statusInfo.title}>
