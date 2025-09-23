@@ -244,7 +244,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                 {thankYouMessage}
                 {selectedGuests.length > 0 
                   ? ` Aguardamos ${selectedGuests.length} pessoa${selectedGuests.length > 1 ? 's' : ''} na nossa celebração! 🎉`
-                  : ''
+                  : ' Sua resposta foi registrada. Esperamos vê-los em uma próxima oportunidade! 💕'
                 }
               </p>
               <Button 
@@ -298,8 +298,8 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
         <Card className="bg-card border-border shadow-lg">
           <CardHeader>
             <CardTitle className="font-serif text-2xl text-slate-800 text-center">
-              {!selectedInvite ? "Nao foi possivel encontrar seu Convite" : 
-               isDeadlinePassed() ? "Prazo Encerrado" : "Selecione os Convidados"}
+              {!selectedInvite ? "Não foi possível encontrar seu Convite" : 
+               isDeadlinePassed() ? "Prazo Encerrado" : "Confirme a Presença dos Convidados"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -371,8 +371,15 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
 
                 <div className="space-y-3">
                   <Label className="text-slate-800 font-medium">
-                    Quem irá comparecer? (Selecione os convidados)
+                    Quem irá comparecer? (Marque quem confirmará presença)
                   </Label>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                    <p className="text-blue-800">
+                      <strong>Importante:</strong> Marque apenas quem irá comparecer. 
+                      As pessoas não marcadas serão registradas como "Cancelado" na lista de convidados.
+                    </p>
+                  </div>
                   
                   {selectedInvite.guests.map((guest) => (
                     <div key={guest.id} className="flex items-center space-x-3 p-3 border border-border rounded-lg">
@@ -394,6 +401,29 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                       )}
                     </div>
                   ))}
+                  
+                  {selectedGuests.length === 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-amber-800 text-sm">
+                        ℹ️ Nenhum convidado selecionado. Todos serão marcados como "Cancelado".
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedGuests.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-green-800 text-sm">
+                        ✅ {selectedGuests.length} pessoa{selectedGuests.length > 1 ? 's' : ''} 
+                        {selectedGuests.length > 1 ? ' serão confirmadas' : ' será confirmada'}.
+                        {selectedInvite.guests.length - selectedGuests.length > 0 && (
+                          <span className="block mt-1">
+                            ❌ {selectedInvite.guests.length - selectedGuests.length} pessoa{selectedInvite.guests.length - selectedGuests.length > 1 ? 's' : ''} 
+                            {selectedInvite.guests.length - selectedGuests.length > 1 ? ' serão canceladas' : ' será cancelada'}.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -429,7 +459,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                     disabled={isSubmitting}
                     className="flex-1 bg-primary text-white hover:bg-primary/90"
                   >
-                    {isSubmitting ? "Confirmando..." : "Confirmar Presença"}
+                    {isSubmitting ? "Enviando..." : "Enviar Confirmação"}
                   </Button>
                 </div>
 

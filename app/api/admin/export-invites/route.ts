@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
             'Gênero': guest.gender || '',
             'Faixa Etária': guest.ageGroup || '',
             'Custo/Pagamento': guest.costPayment || '',
-            'Situação': guest.status || '',
+            'Situação': guest.confirmed ? 'Confirmado' : (guest.status || ''),
             'Mesa': guest.tableNumber || '',
             'Confirmado': guest.confirmed ? 'Sim' : 'Não',
             'Mensagem': guest.message || '',

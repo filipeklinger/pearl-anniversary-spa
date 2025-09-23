@@ -22,7 +22,9 @@ import {
   CircleCheckBig,
   Trash2,
   UserX,
-  Edit
+  Edit,
+  Clock,
+  Ban
 } from "lucide-react"
 import Link from "next/link"
 import { useAdminDashboard } from "@/hooks/useAdminDashboard"
@@ -62,6 +64,40 @@ export default function AdminDashboard() {
     startEditingInvite,
     cancelEditing
   } = useAdminDashboard()
+
+  // Função para determinar o ícone e cor do status do convidado
+  const getGuestStatusIcon = (guest: any) => {
+    if (guest.status === 'Confirmado' && guest.confirmed) {
+      return {
+        icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+        textColor: 'text-green-700',
+        bgColor: 'hover:bg-green-50',
+        title: 'Confirmado - Irá comparecer'
+      }
+    } else if (guest.status === 'Cancelado' && !guest.confirmed) {
+      return {
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+        textColor: 'text-red-700',
+        bgColor: 'hover:bg-red-50',
+        title: 'Cancelado - Não irá comparecer'
+      }
+    } else if (guest.status === 'Pendente' || !guest.status) {
+      return {
+        icon: <Clock className="h-5 w-5 text-yellow-500" />,
+        textColor: 'text-yellow-700',
+        bgColor: 'hover:bg-yellow-50',
+        title: 'Pendente - Aguardando confirmação'
+      }
+    } else {
+      // Estado inconsistente - mostrar como erro
+      return {
+        icon: <Ban className="h-5 w-5 text-gray-500" />,
+        textColor: 'text-gray-700',
+        bgColor: 'hover:bg-gray-50',
+        title: 'Status inconsistente'
+      }
+    }
+  }
 
   if (status === "loading" || isLoading) {
     return (
@@ -114,7 +150,7 @@ export default function AdminDashboard() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Convites</CardTitle>
@@ -142,6 +178,16 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{stats.confirmedGuests}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cancelados</CardTitle>
+              <XCircle className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.cancelledGuests || 0}</div>
             </CardContent>
           </Card>
           
@@ -247,9 +293,9 @@ export default function AdminDashboard() {
                   onChange={(e) => setFilter(e.target.value as "all" | "confirmed" | "pending")}
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 >
-                  <option value="all">Todos</option>
-                  <option value="confirmed">Confirmados</option>
-                  <option value="pending">Pendentes</option>
+                  <option value="all">Todos os status</option>
+                  <option value="confirmed">Com confirmados</option>
+                  <option value="pending">Sem confirmação</option>
                 </select>
               </div>
             </div>
@@ -258,7 +304,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               {filteredInvites.map((invite) => (
                 <div key={invite.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex flex-col md:flex-row items-start justify-between flex-wrap md:flex-col">
+                    <div className="flex flex-col md:flex-row items-start justify-between flex-wrap">
                     <div className="flex-1">
                       <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-3 mb-2">
                       <h3 className="font-semibold text-lg">{invite.nameOnInvite}</h3>
@@ -319,61 +365,72 @@ export default function AdminDashboard() {
                   {invite.guests.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="grid gap-2">
-                        {invite.guests.map((guest) => (
-                          <div key={guest.id} className="group flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center space-x-3 flex-1" title={guest.confirmed ? "Confirmado" : "Não confirmado"}>
-                              {guest.confirmed ? (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : (
-                                <Circle className="h-5 w-5 text-gray-400" />
-                              )}
-                              
-                              <div className="flex-1">
-                                <span className={`font-medium ${guest.confirmed ? 'text-green-700' : 'text-gray-700'}`}>
-                                  {guest.fullName}
-                                </span>
+                        {invite.guests.map((guest) => {
+                          const statusInfo = getGuestStatusIcon(guest)
+                          return (
+                            <div key={guest.id} className={`group flex items-center justify-between py-2 px-3 rounded-lg ${statusInfo.bgColor} transition-colors`}>
+                              <div className="flex items-center space-x-3 flex-1" title={statusInfo.title}>
+                                {statusInfo.icon}
                                 
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  {guest.gender && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {guest.gender}
-                                    </Badge>
-                                  )}
-                                  {guest.ageGroup && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {guest.ageGroup}
-                                    </Badge>
-                                  )}
-                                  {guest.status && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {guest.status}
-                                    </Badge>
-                                  )}
-                                  {guest.tableNumber && (
-                                    <Badge variant="outline" className="text-xs">
-                                      Mesa {guest.tableNumber}
-                                    </Badge>
-                                  )}
+                                <div className="flex-1">
+                                  <span className={`font-medium ${statusInfo.textColor}`}>
+                                    {guest.fullName}
+                                  </span>
+                                  
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {guest.gender && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {guest.gender}
+                                      </Badge>
+                                    )}
+                                    {guest.ageGroup && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {guest.ageGroup}
+                                      </Badge>
+                                    )}
+                                    {guest.status && (
+                                      <Badge 
+                                        variant={
+                                          guest.status === 'Confirmado' ? 'default' : 
+                                          guest.status === 'Cancelado' ? 'destructive' : 
+                                          'secondary'
+                                        } 
+                                        className="text-xs"
+                                      >
+                                        {guest.status}
+                                      </Badge>
+                                    )}
+                                    {guest.tableNumber && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Mesa {guest.tableNumber}
+                                      </Badge>
+                                    )}
+                                    {guest.message && (
+                                      <Badge variant="outline" className="text-xs" title={guest.message}>
+                                        💬 Mensagem
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
+                              
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteGuest(guest.id, guest.fullName, invite.nameOnInvite)}
+                                disabled={deletingGuest === guest.id}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-100 p-0.5 h-6 w-6"
+                                title={`Remover ${guest.fullName}`}
+                              >
+                                {deletingGuest === guest.id ? (
+                                  <div className="animate-spin h-3 w-3 border border-red-500 border-t-transparent rounded-full" />
+                                ) : (
+                                  <UserX className="h-3 w-3" />
+                                )}
+                              </Button>
                             </div>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteGuest(guest.id, guest.fullName, invite.nameOnInvite)}
-                              disabled={deletingGuest === guest.id}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-100 p-0.5 h-6 w-6"
-                              title={`Remover ${guest.fullName}`}
-                            >
-                              {deletingGuest === guest.id ? (
-                                <div className="animate-spin h-3 w-3 border border-red-500 border-t-transparent rounded-full" />
-                              ) : (
-                                <UserX className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}

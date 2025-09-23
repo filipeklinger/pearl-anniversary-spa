@@ -62,12 +62,14 @@ export async function GET(request: NextRequest) {
     const totalInvites = allInvites.length;
     const totalGuests = allGuests.length;
     const confirmedGuests = allGuests.filter(guest => guest.confirmed).length;
+    const cancelledGuests = allGuests.filter(guest => guest.status === 'Cancelado').length;
     const confirmationRate = totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0;
 
     const stats = {
       totalInvites,
       totalGuests,
       confirmedGuests,
+      cancelledGuests,
       confirmationRate,
     };
 

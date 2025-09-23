@@ -71,6 +71,7 @@ export function useAdminDashboard() {
     totalInvites: 0,
     totalGuests: 0,
     confirmedGuests: 0,
+    cancelledGuests: 0,
     confirmationRate: 0
   })
   const router = useRouter()
@@ -98,6 +99,7 @@ export function useAdminDashboard() {
           totalInvites: 0,
           totalGuests: 0,
           confirmedGuests: 0,
+          cancelledGuests: 0,
           confirmationRate: 0
         })
       }

@@ -14,9 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Primeiro, resetar todas as confirmações para os convidados do mesmo convite
-    // Para isso, precisamos buscar o inviteId de um dos convidados
+    // Buscar todos os convidados do convite para processar a confirmação/cancelamento
+    let allGuestsFromInvite: any[] = [];
+    
     if (guestIds.length > 0) {
+      // Buscar o inviteId de um dos convidados
       const firstGuest = await db
         .select({ inviteId: guests.inviteId })
         .from(guests)
@@ -26,32 +28,61 @@ export async function POST(request: NextRequest) {
       if (firstGuest.length > 0) {
         const inviteId = firstGuest[0].inviteId;
         
-        // Resetar todas as confirmações e mensagens para este convite
+        // Buscar todos os convidados deste convite
+        allGuestsFromInvite = await db
+          .select()
+          .from(guests)
+          .where(eq(guests.inviteId, inviteId));
+      }
+    } else {
+      // Se nenhum convidado foi selecionado, ainda precisamos buscar todos para cancelar
+      // Isso não deveria acontecer com a nova lógica, mas vamos tratar
+      return NextResponse.json(
+        { error: 'Pelo menos um convidado deve ser processado' },
+        { status: 400 }
+      );
+    }
+
+    // Processar cada convidado do convite
+    for (const guest of allGuestsFromInvite) {
+      if (guestIds.includes(guest.id)) {
+        // Convidado foi selecionado (marcado) - CONFIRMAR
+        await db
+          .update(guests)
+          .set({ 
+            confirmed: true,
+            status: 'Confirmado',
+            message: message || null,
+            updatedAt: new Date()
+          })
+          .where(eq(guests.id, guest.id));
+      } else {
+        // Convidado NÃO foi selecionado - CANCELAR
         await db
           .update(guests)
           .set({ 
             confirmed: false,
-            message: null,
+            status: 'Cancelado',
+            message: null, // Limpar mensagem de cancelados
             updatedAt: new Date()
           })
-          .where(eq(guests.inviteId, inviteId));
+          .where(eq(guests.id, guest.id));
       }
     }
 
-    // Confirmar apenas os convidados selecionados e adicionar a mensagem
-    if (guestIds.length > 0) {
-      await db
-        .update(guests)
-        .set({ 
-          confirmed: true,
-          message: message || null,
-          updatedAt: new Date()
-        })
-        .where(inArray(guests.id, guestIds));
-    }
+    const confirmedCount = guestIds.length;
+    const totalGuests = allGuestsFromInvite.length;
+    const cancelledCount = totalGuests - confirmedCount;
 
     return NextResponse.json(
-      { message: 'Confirmação atualizada com sucesso' },
+      { 
+        message: 'Confirmação atualizada com sucesso',
+        summary: {
+          confirmed: confirmedCount,
+          cancelled: cancelledCount,
+          total: totalGuests
+        }
+      },
       { status: 200 }
     );
 

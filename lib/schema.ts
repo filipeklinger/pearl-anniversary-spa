@@ -23,10 +23,10 @@ export const guests = pgTable('guests', {
   gender: text('gender'), // M, F
   ageGroup: text('age_group'), // Adulto, Idoso, Criança, etc.
   costPayment: text('cost_payment'), // Inteira, Meia, Cortesia, etc.
-  status: text('status'), // Confirmado, Pendente, Cancelado, etc.
+  status: text('status'), // Confirmado (vai comparecer), Cancelado (não vai), Pendente (não respondeu)
   tableNumber: integer('table_number'), // número da mesa
-  confirmed: boolean('confirmed').default(false),
-  message: text('message'), // mensagem do convidado para o anfitrião
+  confirmed: boolean('confirmed').default(false), // true = vai comparecer, false = não vai
+  message: text('message'), // mensagem do convidado para o anfitrião (apenas para confirmados)
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
