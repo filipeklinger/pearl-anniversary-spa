@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Copy, MessageCircle, Search, ExternalLink, ArrowLeft, Send, RefreshCw } from "lucide-react"
+import { Copy, MessageCircle, Search, ExternalLink, ArrowLeft, Send, RefreshCw, RotateCcw } from "lucide-react"
 import Link from "next/link"
 
 interface Invite {
@@ -126,6 +126,36 @@ export default function SendInvitesPage() {
     }
   }
 
+  const regenerateToken = async (inviteId: number, inviteName: string) => {
+    const confirmMessage = `⚠️ Atenção!\n\nVocê está prestes a gerar um novo token para "${inviteName}".\n\n❌ O link antigo deixará de funcionar permanentemente.\n✅ Um novo link será criado.\n\nTem certeza que deseja continuar?`
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const response = await fetch('/api/admin/invites/generate-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ inviteId }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Atualizar o convite na lista local
+          setInvites(prev => prev.map(invite => 
+            invite.id === inviteId 
+              ? { ...invite, token: data.token }
+              : invite
+          ))
+          alert(`✅ Novo token gerado com sucesso para "${inviteName}"!\n\nO link anterior não funciona mais.`)
+        }
+      } catch (error) {
+        console.error('Erro ao regenerar token:', error)
+        alert('Erro ao regenerar token')
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -214,6 +244,16 @@ export default function SendInvitesPage() {
                     <div className="flex flex-col sm:flex-row gap-2">
                       {invite.token ? (
                         <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => regenerateToken(invite.id, invite.nameOnInvite)}
+                            className="flex items-center gap-2 text-orange-600 border-orange-200 hover:border-orange-600"
+                            title="Gerar novo token (o link atual deixará de funcionar)"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Novo Token
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -223,6 +263,8 @@ export default function SendInvitesPage() {
                             <Copy className="h-4 w-4" />
                             {copySuccess === invite.nameOnInvite ? 'Copiado!' : 'Copiar Link'}
                           </Button>
+                          
+                          
                           
                           {invite.phone && (
                             <Button
