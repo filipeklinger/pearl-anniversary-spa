@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { guests } from '@/lib/schema';
 import { eq, inArray } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { guestIds, message } = await request.json();

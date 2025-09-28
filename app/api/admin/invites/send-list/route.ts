@@ -3,6 +3,9 @@ import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
 import { eq, count } from 'drizzle-orm';
 
+// Add this to make the route dynamic and prevent caching
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Buscar todos os convites com contagem de convidados

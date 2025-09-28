@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { settings } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Buscar a configuração de data limite

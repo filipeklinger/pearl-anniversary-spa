@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
 import { eq, or, ilike } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { searchTerm } = await request.json();

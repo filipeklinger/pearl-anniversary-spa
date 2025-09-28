@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Copy, MessageCircle, Search, ExternalLink, ArrowLeft, Send } from "lucide-react"
+import { Copy, MessageCircle, Search, ExternalLink, ArrowLeft, Send, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
 interface Invite {
@@ -41,7 +41,15 @@ export default function SendInvitesPage() {
 
   const fetchInvites = async () => {
     try {
-      const response = await fetch('/api/admin/invites/send-list')
+      // Add cache-busting parameter and no-cache headers to ensure fresh data
+      const response = await fetch(`/api/admin/invites/send-list?t=${Date.now()}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setInvites(data.invites)
@@ -154,8 +162,23 @@ export default function SendInvitesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
-            <Label htmlFor="search">Buscar convite</Label>
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="search">Buscar convite</Label>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setIsLoading(true)
+                  fetchInvites()
+                }}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
