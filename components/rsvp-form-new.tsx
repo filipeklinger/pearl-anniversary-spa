@@ -418,7 +418,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                         {selectedInvite.guests.length - selectedGuests.length > 0 && (
                           <span className="block mt-1">
                             ❌ {selectedInvite.guests.length - selectedGuests.length} pessoa{selectedInvite.guests.length - selectedGuests.length > 1 ? 's' : ''} 
-                            {selectedInvite.guests.length - selectedGuests.length > 1 ? ' serão canceladas' : ' será cancelada'}.
+                            {selectedInvite.guests.length - selectedGuests.length > 1 ? ' Não irão comparecer' : ' Não vai comparecer'}.
                           </span>
                         )}
                       </p>
