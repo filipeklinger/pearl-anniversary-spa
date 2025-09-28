@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
-import { guests, invites, settings } from '@/lib/schema';
+import { invites, guests, users, settings } from '@/lib/schema';
+
+export const dynamic = 'force-dynamic';
 
 export async function DELETE(request: NextRequest) {
   try {

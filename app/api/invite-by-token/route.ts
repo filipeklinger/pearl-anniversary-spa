@@ -3,10 +3,13 @@ import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
+// Add this to make the route dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
+    // Use searchParams directly from request instead of creating new URL
+    const token = request.nextUrl.searchParams.get('token');
     
     if (!token || typeof token !== 'string') {
       return NextResponse.json(

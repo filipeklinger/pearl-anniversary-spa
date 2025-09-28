@@ -5,10 +5,9 @@ import { db } from '@/lib/db';
 import { guests } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const dynamic = 'force-dynamic';
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     

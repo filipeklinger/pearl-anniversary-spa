@@ -5,6 +5,9 @@ import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
 import { eq, isNotNull, ne, and } from 'drizzle-orm';
 
+// Add this to make the route dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -5,21 +5,23 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { eq } from 'drizzle-orm'
 
-interface CreateInviteBody {
-  nameOnInvite: string
-  ddi?: string
-  phone?: string
-  group?: string
-  observation?: string
-  code?: string
-  guests: {
-    fullName: string
-    gender?: string
-    ageGroup?: string
-    costPayment?: string
-    status?: string
-    tableNumber?: number
-  }[]
+export const dynamic = 'force-dynamic';
+
+interface CreateInviteRequest {
+  nameOnInvite: string;
+  ddi?: string;
+  phone?: string;
+  group?: string;
+  observation?: string;
+  code?: string;
+  guests: Array<{
+    fullName: string;
+    gender?: string;
+    ageGroup?: string;
+    costPayment?: string;
+    status?: string;
+    tableNumber?: number;
+  }>;
 }
 
 export async function POST(request: NextRequest) {
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 })
     }
 
-    const body: CreateInviteBody = await request.json()
+    const body: CreateInviteRequest = await request.json()
     
     // Validações básicas
     if (!body.nameOnInvite?.trim()) {
