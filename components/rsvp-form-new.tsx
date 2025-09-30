@@ -178,14 +178,21 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
     setError("")
 
     try {
+      // Novo formato: enviar todos os convidados com suas respectivas confirmações
+      const guestConfirmations = selectedInvite.guests.map(guest => ({
+        id: guest.id,
+        confirmed: selectedGuests.includes(guest.id)
+      }));
+
       const response = await fetch('/api/confirm-guests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          guestIds: selectedGuests,
-          message: message.trim() || null
+          guests: guestConfirmations,
+          message: message.trim() || null,
+          inviteId: selectedInvite.id
         }),
       })
 
@@ -229,11 +236,11 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
         <div className="max-w-2xl mx-auto px-4 text-center">
           <Card className="bg-card border-border shadow-lg">
             <CardHeader>
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className={`mx-auto w-16 h-16 ${selectedGuests.length > 0 ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mb-4`}>
+                <CheckCircle className={`w-8 h-8 ${selectedGuests.length > 0 ? 'text-green-600' : 'text-blue-600'}`} />
               </div>
               <CardTitle className="font-serif text-2xl text-slate-800">
-                Confirmação Realizada!
+                {selectedGuests.length > 0 ? 'Presença Confirmada!' : 'Resposta Registrada!'}
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center">
@@ -241,11 +248,14 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                 Obrigado, <strong>{selectedInvite.nameOnInvite}</strong>!
               </p>
               <p className="text-slate-600 mb-6">
-                {thankYouMessage}
-                {selectedGuests.length > 0 
-                  ? ` Aguardamos ${selectedGuests.length} pessoa${selectedGuests.length > 1 ? 's' : ''} na nossa celebração! 🎉`
-                  : ' Sua resposta foi registrada. Esperamos vê-los em uma próxima oportunidade! 💕'
-                }
+                {selectedGuests.length > 0 ? (
+                  <>
+                    {thankYouMessage}
+                    {` Aguardamos ${selectedGuests.length} pessoa${selectedGuests.length > 1 ? 's' : ''} na nossa celebração! 🎉`}
+                  </>
+                ) : (
+                  'Agradecemos por nos informar sobre a impossibilidade de comparecer. Sua resposta foi registrada e esperamos vê-los em uma próxima oportunidade! 💕'
+                )}
               </p>
               <Button 
                 onClick={resetForm}
@@ -377,7 +387,8 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
                     <p className="text-blue-800">
                       <strong>Importante:</strong> Marque apenas quem irá comparecer. 
-                      As pessoas não marcadas serão registradas como "Cancelado" na lista de convidados.
+                      As pessoas não marcadas serão registradas como "Não vai comparecer" na lista de convidados.
+                      Se ninguém puder comparecer, você pode deixar todos desmarcados e enviar apenas uma mensagem.
                     </p>
                   </div>
                   
@@ -405,7 +416,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                   {selectedGuests.length === 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                       <p className="text-amber-800 text-sm">
-                        ℹ️ Nenhum convidado selecionado. Todos serão marcados como "Cancelado".
+                        ℹ️ Nenhum convidado selecionado. Você pode enviar uma mensagem informando que não irão comparecer.
                       </p>
                     </div>
                   )}
@@ -418,7 +429,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                         {selectedInvite.guests.length - selectedGuests.length > 0 && (
                           <span className="block mt-1">
                             ❌ {selectedInvite.guests.length - selectedGuests.length} pessoa{selectedInvite.guests.length - selectedGuests.length > 1 ? 's' : ''} 
-                            {selectedInvite.guests.length - selectedGuests.length > 1 ? ' Não irão comparecer' : ' Não vai comparecer'}.
+                            {selectedInvite.guests.length - selectedGuests.length > 1 ? ' não irão comparecer' : ' não vai comparecer'}.
                           </span>
                         )}
                       </p>
@@ -432,7 +443,9 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                   </Label>
                   <Textarea
                     id="message"
-                    placeholder="Escreva aqui uma mensagem carinhosa para Robson & Roseli..."
+                    placeholder={selectedGuests.length === 0 
+                      ? "Ex: 'Infelizmente não poderemos comparecer, mas desejamos muito sucesso na celebração! 💕'"
+                      : "Escreva aqui uma mensagem carinhosa para Robson & Roseli..."}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     maxLength={500}
@@ -459,7 +472,7 @@ export default function RSVPForm({ inviteToken }: RSVPFormProps) {
                     disabled={isSubmitting}
                     className="flex-1 bg-primary text-white hover:bg-primary/90"
                   >
-                    {isSubmitting ? "Enviando..." : "Enviar Confirmação"}
+                    {isSubmitting ? "Enviando..." : "Enviar Resposta"}
                   </Button>
                 </div>
 
