@@ -24,7 +24,8 @@ import {
   UserX,
   Edit,
   Clock,
-  Ban
+  Ban,
+  MessageCircle
 } from "lucide-react"
 import Link from "next/link"
 import { useAdminDashboard } from "@/hooks/useAdminDashboard"
@@ -164,21 +165,26 @@ export default function AdminDashboard() {
             <p className="font-serif text-2xl font-bold text-foreground">Painel Administrativo</p>
           </div>
         </div>
-        
-        <div className="flex flex-row space-y-2 gap-1 justify-between md:justify-normal md:items-center md:space-y-0 md:space-x-4">
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4">
           <Link href="/admin/send-invites">
-            <Button variant="default" size="sm">
+            <Button variant="default" size="sm" className="w-full md:w-auto">
               <Heart className="h-4 w-4 mr-2" />
               Enviar Convites
             </Button>
           </Link>
-          <Link href="/admin/settings">
-            <Button variant="secondary" size="sm">
-          <Settings className="h-4 w-4 mr-2" />
-          Configurações
+          <Link href="/admin/messages">
+            <Button variant="outline" size="sm" className="w-full md:w-auto">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Mensagens
             </Button>
           </Link>
-          <Button onClick={handleSignOut} variant="outline" size="sm">
+          <Link href="/admin/settings">
+            <Button variant="secondary" size="sm" className="w-full md:w-auto">
+              <Settings className="h-4 w-4 mr-2" />
+              Configurações
+            </Button>
+          </Link>
+          <Button onClick={handleSignOut} variant="outline" size="sm" className="w-full md:w-auto">
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </Button>
@@ -365,12 +371,6 @@ export default function AdminDashboard() {
                           <span>🎫 {invite.code}</span>
                         )}
                       </div>
-
-                      {invite.observation && (
-                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mb-3">
-                          💬 {invite.observation}
-                        </div>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-2">

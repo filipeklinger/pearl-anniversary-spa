@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
         ddi: invites.ddi,
         phone: invites.phone,
         group: invites.group,
-        observation: invites.observation,
         code: invites.code,
       })
       .from(invites)
