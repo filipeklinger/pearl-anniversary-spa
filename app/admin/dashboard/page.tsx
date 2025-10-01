@@ -116,7 +116,7 @@ export default function AdminDashboard() {
         case 'Cancelado':
           return {
             icon: <XCircle className="h-4 w-4 text-red-600" />,
-            title: 'Cancelado',
+            title: 'Não vai comparecer',
             bgColor: 'bg-red-50 hover:bg-red-100',
             textColor: 'text-red-800'
           }
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cancelados</CardTitle>
+              <CardTitle className="text-sm font-medium">Não vai comparecer</CardTitle>
               <XCircle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -335,12 +335,13 @@ export default function AdminDashboard() {
                 {/* Status Filter */}
                 <select
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value as "all" | "confirmed" | "pending")}
+                  onChange={(e) => setFilter(e.target.value as "all" | "confirmed" | "pending" | "cancelled")}
                   className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 >
                   <option value="all">Todos os status</option>
                   <option value="confirmed">Com confirmados</option>
                   <option value="pending">Sem confirmação</option>
+                  <option value="cancelled">Não vai comparecer</option>
                 </select>
               </div>
             </div>
@@ -436,7 +437,7 @@ export default function AdminDashboard() {
                                         } 
                                         className="text-xs"
                                       >
-                                        {guest.status}
+                                        {guest.status === 'Cancelado' ? 'Não vai comparecer' : guest.status}
                                       </Badge>
                                     )}
                                     {guest.tableNumber && (

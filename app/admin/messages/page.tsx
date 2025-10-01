@@ -158,7 +158,7 @@ export default function MessagesPage() {
     if (msg.status === "Confirmado" || msg.confirmedCount > 0) {
       return <Badge className="bg-green-100 text-green-800 border-green-200">Confirmado</Badge>
     } else if (msg.status === "Cancelado" || msg.confirmedCount === 0) {
-      return <Badge className="bg-red-100 text-red-800 border-red-200">Não comparecerá</Badge>
+      return <Badge className="bg-red-100 text-red-800 border-red-200">Não vai comparecer</Badge>
     }
     return <Badge variant="secondary">Pendente</Badge>
   }
@@ -224,7 +224,7 @@ export default function MessagesPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cancelamentos c/ mensagem</CardTitle>
+              <CardTitle className="text-sm font-medium">Não vai comparecer c/ mensagem</CardTitle>
               <Users className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -261,7 +261,7 @@ export default function MessagesPage() {
                 >
                   <option value="all">Todos os status</option>
                   <option value="confirmed">Confirmações</option>
-                  <option value="cancelled">Cancelamentos</option>
+                  <option value="cancelled">Não vai comparecer</option>
                 </select>
               </div>
             </div>

@@ -44,7 +44,7 @@ export function useAdminDashboard() {
   const [filteredInvites, setFilteredInvites] = useState<Invite[]>([]) // Convites filtrados
   const [paginatedInvites, setPaginatedInvites] = useState<Invite[]>([]) // Convites da página atual
   const [searchTerm, setSearchTerm] = useState("")
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending">("all")
+  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "cancelled">("all")
   const [groupFilter, setGroupFilter] = useState<string>("all")
   const [availableGroups, setAvailableGroups] = useState<string[]>([])
   const [pagination, setPagination] = useState<Pagination>({
@@ -139,8 +139,26 @@ export function useAdminDashboard() {
     // Filter by confirmation status
     if (filter !== "all") {
       filtered = filtered.filter(invite => {
-        const hasConfirmed = invite.guests.some(guest => guest.confirmed)
-        return filter === "confirmed" ? hasConfirmed : !hasConfirmed
+        const hasConfirmed = invite.guests.some(guest => 
+          guest.confirmed === true || guest.status === 'Confirmado'
+        )
+        const hasCancelled = invite.guests.some(guest => 
+          guest.status === 'Cancelado'
+        )
+        const hasPending = invite.guests.some(guest => 
+          !guest.confirmed && (!guest.status || guest.status === 'Pendente')
+        )
+        
+        switch (filter) {
+          case "confirmed":
+            return hasConfirmed
+          case "cancelled":
+            return hasCancelled
+          case "pending":
+            return hasPending && !hasConfirmed && !hasCancelled
+          default:
+            return true
+        }
       })
     }
 

@@ -411,7 +411,7 @@ export function ManualInviteForm({
                         <option value="">Selecione</option>
                         <option value="Confirmado">Confirmado</option>
                         <option value="Pendente">Pendente</option>
-                        <option value="Cancelado">Cancelado</option>
+                        <option value="Cancelado">Não vai comparecer</option>
                       </select>
                     </div>
                   </div>
