@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
 import { invites, guests } from '@/lib/schema';
-import { eq, isNotNull, ne, and } from 'drizzle-orm';
+import { eq, isNotNull, ne, and, sql } from 'drizzle-orm';
 
 // Add this to make the route dynamic
 export const dynamic = 'force-dynamic';
@@ -47,7 +47,14 @@ export async function GET(request: NextRequest) {
           .from(guests)
           .where(eq(guests.inviteId, invite.id));
 
-        const confirmedCount = guestsList.filter(guest => guest.confirmed).length;
+        // Usar a mesma lógica da API de mensagens para contar confirmações
+        const confirmedCount = guestsList.filter(guest => {
+          // Se confirmed é true, sempre contar como confirmado (retrocompatibilidade)
+          if (guest.confirmed === true) return true;
+          // Se confirmed é false/null mas status é 'Confirmado', contar como confirmado
+          if (!guest.confirmed && guest.status === 'Confirmado') return true;
+          return false;
+        }).length;
 
         return {
           ...invite,
@@ -58,22 +65,19 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Buscar todos os convidados para estatísticas globais
-    const allGuests = await db.select().from(guests);
+    // Buscar estatísticas globais usando SQL otimizado
+    const globalStats = await db
+      .select({
+        totalGuests: sql<number>`COUNT(*)`.as('totalGuests'),
+        confirmedGuests: sql<number>`SUM(CASE WHEN ${guests.confirmed} = true OR ${guests.status} = 'Confirmado' THEN 1 ELSE 0 END)`.as('confirmedGuests'),
+        cancelledGuests: sql<number>`SUM(CASE WHEN ${guests.status} = 'Cancelado' THEN 1 ELSE 0 END)`.as('cancelledGuests'),
+      })
+      .from(guests);
     
     const totalInvites = allInvites.length;
-    const totalGuests = allGuests.length;
-    
-    // Priority: confirmed field first (for backward compatibility), then status field
-    const confirmedGuests = allGuests.filter(guest => {
-      // If confirmed is true, count as confirmed (backward compatibility)
-      if (guest.confirmed === true) return true;
-      // If confirmed is false/null but status is Confirmado, count as confirmed
-      if (!guest.confirmed && guest.status === 'Confirmado') return true;
-      return false;
-    }).length;
-    
-    const cancelledGuests = allGuests.filter(guest => guest.status === 'Cancelado').length;
+    const totalGuests = Number(globalStats[0]?.totalGuests) || 0;
+    const confirmedGuests = Number(globalStats[0]?.confirmedGuests) || 0;
+    const cancelledGuests = Number(globalStats[0]?.cancelledGuests) || 0;
     const confirmationRate = totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0;
 
     const stats = {

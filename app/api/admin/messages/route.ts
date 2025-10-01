@@ -82,11 +82,13 @@ export async function GET(request: NextRequest) {
         ...msg,
         confirmedCount: statsMap.get(msg.inviteId)?.confirmedCount || 0,
         totalGuests: statsMap.get(msg.inviteId)?.totalGuests || 0,
+        messageType: 'guest' as const,
       })),
       ...inviteMessages.map(msg => ({
         ...msg,
         confirmedCount: statsMap.get(msg.inviteId)?.confirmedCount || 0,
         totalGuests: statsMap.get(msg.inviteId)?.totalGuests || 0,
+        messageType: 'invite' as const,
       }))
     ];
 
@@ -115,6 +117,62 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao buscar mensagens:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const { messageId, messageType } = await request.json();
+    
+    if (!messageId || !messageType) {
+      return NextResponse.json(
+        { error: 'ID da mensagem e tipo são obrigatórios' },
+        { status: 400 }
+      );
+    }
+
+    if (messageType === 'guest') {
+      // Deletar mensagem de convidado (limpar o campo message)
+      await db
+        .update(guests)
+        .set({ 
+          message: null,
+          updatedAt: new Date()
+        })
+        .where(eq(guests.id, messageId));
+    } else if (messageType === 'invite') {
+      // Deletar mensagem de convite (limpar o campo observation)
+      await db
+        .update(invites)
+        .set({ 
+          observation: null,
+          updatedAt: new Date()
+        })
+        .where(eq(invites.id, messageId));
+    } else {
+      return NextResponse.json(
+        { error: 'Tipo de mensagem inválido' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Mensagem deletada com sucesso' },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Erro ao deletar mensagem:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

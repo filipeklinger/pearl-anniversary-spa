@@ -12,7 +12,8 @@ import {
   Users, 
   Calendar,
   Heart,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -29,6 +30,7 @@ interface MessageData {
   updatedAt: string
   confirmedCount: number
   totalGuests: number
+  messageType: 'guest' | 'invite' // Novo campo para identificar o tipo
 }
 
 export default function MessagesPage() {
@@ -38,6 +40,7 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "cancelled">("all")
   const [isLoading, setIsLoading] = useState(true)
+  const [deletingMessage, setDeletingMessage] = useState<string | null>(null)
   const [stats, setStats] = useState({
     totalMessages: 0,
     confirmedMessages: 0,
@@ -110,6 +113,47 @@ export default function MessagesPage() {
     })
   }
 
+  const handleDeleteMessage = async (messageId: number, messageType: 'guest' | 'invite', senderName: string) => {
+    const confirmed = window.confirm(
+      `⚠️ Confirmação de Exclusão\n\n` +
+      `Deletar mensagem de:\n"${senderName}"\n\n` +
+      `Esta ação NÃO pode ser desfeita!\n\n` +
+      `Confirmar exclusão?`
+    )
+
+    if (!confirmed) return
+
+    const messageKey = `${messageType}-${messageId}`
+    setDeletingMessage(messageKey)
+
+    try {
+      const response = await fetch('/api/admin/messages', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          messageId,
+          messageType
+        }),
+      })
+
+      if (response.ok) {
+        // Recarregar as mensagens
+        await fetchMessages()
+        alert('✅ Mensagem deletada com sucesso!')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`❌ Erro ao deletar mensagem: ${errorData.error || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao deletar mensagem:', error)
+      alert('❌ Erro ao deletar mensagem. Tente novamente.')
+    } finally {
+      setDeletingMessage(null)
+    }
+  }
+
   const getStatusBadge = (msg: MessageData) => {
     if (msg.status === "Confirmado" || msg.confirmedCount > 0) {
       return <Badge className="bg-green-100 text-green-800 border-green-200">Confirmado</Badge>
@@ -170,7 +214,7 @@ export default function MessagesPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Confirmações</CardTitle>
+              <CardTitle className="text-sm font-medium">Confirmações c/ mensagem</CardTitle>
               <Heart className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -180,7 +224,7 @@ export default function MessagesPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cancelamentos</CardTitle>
+              <CardTitle className="text-sm font-medium">Cancelamentos c/ mensagem</CardTitle>
               <Users className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -289,6 +333,28 @@ export default function MessagesPage() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Botão de deletar */}
+                    {/* <div className="flex items-start">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteMessage(
+                          msg.id, 
+                          msg.messageType, 
+                          msg.guestName || msg.nameOnInvite
+                        )}
+                        disabled={deletingMessage === `${msg.messageType}-${msg.id}`}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Deletar mensagem"
+                      >
+                        {deletingMessage === `${msg.messageType}-${msg.id}` ? (
+                          <div className="animate-spin h-4 w-4 border border-red-500 border-t-transparent rounded-full" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div> */}
                   </div>
                 </CardContent>
               </Card>
