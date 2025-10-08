@@ -140,7 +140,7 @@ export default function HomePage() {
                     mantimentos para doação.
                   </p>
                   <div className="bg-secondary/20 p-4 rounded-lg">
-                    <p className="font-mono text-sm text-slate-800">PIX: rgabrich.zap@gmail.com</p>
+                    <p className="font-mono text-sm text-slate-800">PIX: bodasrobsoneroseli@gmail.com</p>
                   </div>
                 </div>
               </CardContent>
